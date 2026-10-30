@@ -33,16 +33,16 @@ class MainWindow(QMainWindow):
         self.gantt = GanttView(self.sim.linea, self.sim.buscar)
         self.bcp_ejecucion = BcpPanel("BCP (EJECUCIÓN)", bcp_campos.EJECUCION)
         self.bcp_seleccionado = BcpPanel("BCP (SELECCIONADO)", bcp_campos.SELECCIONADO, columnas=2)
-        self.tabla_preparados = BcpTable("BCP PREPARADOS", bcp_campos.TABLA_PREPARADOS)
-        self.tabla_suspendidos = BcpTable("BCP SUSPENDIDOS", bcp_campos.TABLA_SUSPENDIDOS)
+        #self.tabla_preparados = BcpTable("BCP PREPARADOS", bcp_campos.TABLA_PREPARADOS)
+        #self.tabla_suspendidos = BcpTable("BCP SUSPENDIDOS", bcp_campos.TABLA_SUSPENDIDOS)
 
         self.form.setFixedWidth(230)
         self.bcp_ejecucion.setFixedWidth(250)
         for q in (self.preparados, self.ejecucion, self.suspendidos):
             q.setMinimumHeight(110)
         self.ejecucion.setMaximumHeight(130)
-        self.tabla_preparados.setMinimumHeight(170)
-        self.tabla_suspendidos.setMinimumHeight(170)
+        #self.tabla_preparados.setMinimumHeight(170)
+        #self.tabla_suspendidos.setMinimumHeight(170)
 
         # ---- distribución ----
         colas = QVBoxLayout()
@@ -63,8 +63,8 @@ class MainWindow(QMainWindow):
         cuerpo.addLayout(centro, 3)
 
         tablas = QHBoxLayout()
-        tablas.addWidget(self.tabla_preparados)
-        tablas.addWidget(self.tabla_suspendidos)
+        #tablas.addWidget(self.tabla_preparados)
+        #tablas.addWidget(self.tabla_suspendidos)
 
         raiz = QWidget()
         raiz.setObjectName("Root")
@@ -85,9 +85,9 @@ class MainWindow(QMainWindow):
         self.form.enviar.connect(self._agregar)
         self.form.aleatorio.connect(self._agregar_aleatorio)
         for w in (self.preparados, self.ejecucion, self.suspendidos,
-                  self.tabla_preparados, self.tabla_suspendidos):
+                  ):
             w.seleccionado.connect(self._seleccionar)
-
+#self.tabla_preparados, self.tabla_suspendidos
         self.sim.cambio.connect(self._refrescar)
         self.sim.reiniciado.connect(self._al_reiniciar)
         self.sim.evento.connect(lambda msg: self.statusBar().showMessage(msg))
@@ -134,6 +134,6 @@ class MainWindow(QMainWindow):
         self.cpu.actualizar(s.en_cpu)
         self.bcp_ejecucion.actualizar(s.en_cpu)
         self.bcp_seleccionado.actualizar(s.buscar(self._sel) if self._sel is not None else None)
-        self.tabla_preparados.actualizar(preparados)
-        self.tabla_suspendidos.actualizar(s.suspendidos)
+        #self.tabla_preparados.actualizar(preparados)
+        #self.tabla_suspendidos.actualizar(s.suspendidos)
         self.gantt.refrescar(s.reloj)
