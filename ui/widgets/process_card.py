@@ -22,6 +22,8 @@ class ProcessCard(QFrame):
         self._badge.setStyleSheet(f"QLabel#Badge {{ background: {p.color}; }}")
 
         self._nombre = QLabel()
+        self._nombre.setTextFormat(Qt.PlainText)
+        self._nombre.setWordWrap(True)
         self._nombre.setStyleSheet("font-weight: 600;")
         self._detalle = QLabel()
         self._detalle.setObjectName("Muted")
@@ -38,7 +40,7 @@ class ProcessCard(QFrame):
 
     def actualizar(self, p):
         self._nombre.setText(p.nombre)
-        self._detalle.setText(f"PID {p.pid}  ·  Prioridad {p.prioridad}")
+        self._detalle.setText(f"PID {p.pid}  ·  Prioridad {p.prioridad}  ·  {p.progreso_total}%")
         self.setToolTip(tooltip_proceso(p))
 
     def set_seleccionado(self, activo: bool):

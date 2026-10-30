@@ -1,54 +1,48 @@
-/* Plantilla de estilos. Cada texto entre dobles llaves se reemplaza por la variable del mismo nombre en utils/colors.py */
-
-* { font-family: "Segoe UI", sans-serif; font-size: 12px; color: {{TEXT}}; }
-
+* { font-family: "Segoe UI"; font-size: 12px; color: {{TEXT}}; }
 QMainWindow, QWidget#Root { background: {{BG_APP}}; }
-
-/* Paneles y tarjetas */
-QFrame#Panel { background: {{BG_PANEL}}; border: 1px solid {{BORDER}}; border-radius: 10px; }
-QFrame#Card  { background: {{BG_PANEL_ALT}}; border: 1px solid {{BORDER}}; border-radius: 8px; }
-QLabel#PanelTitle { color: {{TEXT_MUTED}}; font-weight: 600; }
+QFrame#Panel, QFrame#Metric, QFrame#Toolbar { background: {{BG_PANEL}}; border: 1px solid {{BORDER}}; border-radius: 12px; }
+QFrame#Card { background: {{BG_PANEL_ALT}}; border: 1px solid {{BORDER}}; border-radius: 8px; }
+QFrame#Card:hover { border-color: {{ACCENT}}; }
+QFrame#Card[sel="true"] { background: {{BG_HOVER}}; border: 1px solid {{ACCENT}}; }
+QLabel { background: transparent; }
+QLabel#PanelTitle { color: {{TEXT_MUTED}}; font-size: 11px; font-weight: 700; }
 QLabel#Muted { color: {{TEXT_MUTED}}; }
-
-/* Botones */
-QPushButton { background: {{BG_PANEL}}; border: 1px solid {{BORDER}}; border-radius: 6px; padding: 7px 14px; }
-QPushButton:hover { background: {{BG_HOVER}}; }
-QPushButton#Primary { background: {{ACCENT}}; color: {{TEXT_ON_ACCENT}}; border: none; font-weight: 600; }
+QLabel#Title { font-size: 25px; font-weight: 700; }
+QLabel#Big { font-size: 21px; font-weight: 700; }
+QLabel#MetricValue { font-size: 23px; font-weight: 600; }
+QLabel#Brand { background: {{ACCENT}}; color: {{TEXT_ON_ACCENT}}; border-radius: 12px; font-size: 20px; font-weight: 800; }
+QLabel#State { color: {{ACCENT}}; background: {{BG_PANEL_ALT}}; border: 1px solid {{BORDER}}; border-radius: 12px; padding: 7px 14px; font-weight: 600; }
+QLabel#Badge { color: {{TEXT_ON_ACCENT}}; font-weight: 700; font-size: 16px; border-radius: 10px; }
+QPushButton { background: {{BG_PANEL_ALT}}; border: 1px solid {{BORDER}}; border-radius: 7px; padding: 8px 13px; font-weight: 600; }
+QPushButton:hover { background: {{BG_HOVER}}; border-color: {{TEXT_MUTED}}; }
+QPushButton:pressed { border-color: {{ACCENT}}; }
+QPushButton#Primary { background: {{ACCENT}}; color: {{TEXT_ON_ACCENT}}; border-color: {{ACCENT}}; }
 QPushButton#Primary:hover { background: {{ACCENT_HOVER}}; }
-QPushButton#Danger { background: {{DANGER}}; border: none; font-weight: 600; }
-
-/* Entradas */
-QLineEdit, QComboBox, QSpinBox { background: {{BG_INPUT}}; border: 1px solid {{BORDER}}; border-radius: 5px; padding: 5px 8px; }
+QPushButton:disabled { color: {{TEXT_MUTED}}; background: {{BG_INPUT}}; }
+QPushButton#Danger:hover { color: {{DANGER}}; border-color: {{DANGER}}; }
+QLineEdit, QComboBox, QSpinBox { background: {{BG_INPUT}}; border: 1px solid {{BORDER}}; border-radius: 6px; padding: 7px 8px; selection-background-color: {{BG_HOVER}}; }
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus { border-color: {{ACCENT}}; }
-QComboBox QAbstractItemView { background: {{BG_PANEL}}; selection-background-color: {{ACCENT}}; border: 1px solid {{BORDER}}; }
-
-/* Progreso (quantum) */
-QProgressBar { background: {{GANTT_BG}}; border: none; border-radius: 4px; text-align: center; }
-QProgressBar::chunk { background: {{STATE_EJECUCION}}; border-radius: 4px; }
-
-/* Listas / scroll */
-QScrollArea, QListWidget { background: transparent; border: none; }
+QComboBox QAbstractItemView { background: {{BG_PANEL}}; selection-background-color: {{BG_HOVER}}; border: 1px solid {{BORDER}}; }
+QProgressBar { background: {{BG_INPUT}}; border: none; border-radius: 4px; text-align: center; font-size: 10px; }
+QProgressBar::chunk { background: {{ACCENT}}; border-radius: 4px; }
+QProgressBar#TotalProgress::chunk { background: {{STATE_PREPARADO}}; }
+QScrollArea { background: transparent; border: none; }
 QScrollArea > QWidget > QWidget { background: transparent; }
 QScrollBar:vertical { background: transparent; width: 8px; }
-QScrollBar::handle:vertical { background: {{BORDER}}; border-radius: 4px; min-height: 20px; }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-
-/* Info al pasar el mouse (barras del Gantt, tarjetas) */
-QToolTip { background: {{TOOLTIP_BG}}; color: {{TOOLTIP_TEXT}}; border: 1px solid {{BORDER}}; padding: 6px; }
-
-/* Selección de tarjetas */
-QFrame#Card[sel="true"] { background: {{BG_HOVER}}; }
-
-/* Etiquetas especiales */
-QLabel#Badge { color: {{TEXT_ON_ACCENT}}; font-weight: 700; font-size: 16px; border-radius: 8px; }
-QLabel#Big { font-size: 18px; font-weight: 700; }
-QLabel#Title { color: {{ACCENT}}; font-size: 14px; font-weight: 700; }
-
-/* Tablas de BCP */
-QTableWidget { background: {{BG_PANEL_ALT}}; border: none; border-radius: 6px; }
-QTableWidget::item { padding: 4px 6px; border-bottom: 1px solid {{BORDER}}; }
-QHeaderView::section { background: {{BG_PANEL}}; color: {{TEXT_MUTED}}; border: none; border-bottom: 1px solid {{BORDER}}; padding: 5px 6px; font-weight: 600; }
-QPushButton:disabled { color: {{TEXT_MUTED}}; }
-
-/* Barra de estado (último evento) */
-QStatusBar { background: {{BG_APP}}; color: {{TEXT_MUTED}}; }
+QScrollBar::handle:vertical { background: {{BORDER}}; border-radius: 4px; min-height: 24px; }
+QScrollBar:horizontal { background: transparent; height: 8px; }
+QScrollBar::handle:horizontal { background: {{BORDER}}; border-radius: 4px; min-width: 24px; }
+QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
+QTabWidget::pane { background: {{BG_PANEL}}; border: 1px solid {{BORDER}}; border-radius: 10px; top: -1px; }
+QTabBar::tab { color: {{TEXT_MUTED}}; padding: 10px 12px; border-bottom: 2px solid transparent; }
+QTabBar::tab:selected { color: {{ACCENT}}; border-bottom-color: {{ACCENT}}; }
+QTabBar::tab:hover { color: {{TEXT}}; }
+QTableWidget { background: {{BG_PANEL}}; alternate-background-color: {{BG_PANEL_ALT}}; border: none; gridline-color: {{BORDER}}; }
+QTableWidget::item { padding: 5px 8px; border-bottom: 1px solid {{BORDER}}; }
+QTableWidget::item:selected { background: {{BG_HOVER}}; color: {{TEXT}}; }
+QHeaderView::section { background: {{BG_PANEL}}; color: {{TEXT_MUTED}}; border: none; border-bottom: 1px solid {{BORDER}}; padding: 8px; font-size: 11px; font-weight: 600; }
+QPlainTextEdit { background: {{BG_PANEL}}; color: {{TEXT_MUTED}}; border: none; padding: 8px; font-family: "Cascadia Code", "Consolas"; font-size: 11px; }
+QToolTip { background: {{TOOLTIP_BG}}; color: {{TOOLTIP_TEXT}}; border: 1px solid {{BORDER}}; padding: 8px; }
+QSplitter::handle { background: {{BG_APP}}; }
+QSplitter::handle:hover { background: {{BORDER}}; }
+QStatusBar { background: {{BG_APP}}; color: {{TEXT_MUTED}}; font-size: 11px; }

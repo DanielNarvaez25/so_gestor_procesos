@@ -23,12 +23,15 @@ INTERACTIVIDAD = Campo("Interactividad", lambda p: f"{p.interactividad}%")
 T_TOTAL = Campo("Tiempo total", lambda p: ms(p.tiempo_total))
 T_EJECUTADO = Campo("Tiempo ejecutado", lambda p: ms(p.tiempo_ejecutado))
 T_EJECUCION = Campo("Tiempo de ejecución", lambda p: f"{ms(p.tiempo_ejecutado)} / {ms(p.tiempo_total)}")
-CAUSA = Campo("Causa de bloqueo", lambda p: p.causa_bloqueo or "—")
-T_ESPERA = Campo("Tiempo de espera", lambda p: f"{ms(p.tiempo_en_bloqueo)} / {ms(p.bloqueo_total)}")
+CAUSA = Campo("Causa de bloqueo", lambda p: p.causa_bloqueo if p.estado.name == "SUSPENDIDO" else "—")
+T_ESPERA = Campo("Avance E/S", lambda p: f"{ms(p.tiempo_en_bloqueo)} / {ms(p.bloqueo_total)}" if p.estado.name == "SUSPENDIDO" else "—")
+
+ESPERA_CPU = Campo("Espera en cola", lambda p: ms(p.tiempo_espera))
+RESTANTE = Campo("CPU restante", lambda p: ms(p.tiempo_restante))
 
 # Paneles de detalle
 EJECUCION = [PID, NOMBRE, ESTADO, PRIORIDAD, QUANTUM, T_TOTAL, T_EJECUTADO]
-SELECCIONADO = [NOMBRE, ESTADO, PRIORIDAD, QUANTUM, PID, INTERACTIVIDAD]
+SELECCIONADO = [PID, NOMBRE, ESTADO, PRIORIDAD, QUANTUM, INTERACTIVIDAD, T_TOTAL, T_EJECUTADO, RESTANTE, ESPERA_CPU, CAUSA, T_ESPERA]
 
 # Columnas de las tablas inferiores
 TABLA_PREPARADOS = [PID, NOMBRE, ESTADO, PRIORIDAD, QUANTUM, T_EJECUCION]

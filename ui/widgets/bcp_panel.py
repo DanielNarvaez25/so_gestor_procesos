@@ -1,4 +1,5 @@
 """Panel de detalle de un BCP (pares etiqueta / valor)."""
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QLabel
 
 from .bcp_campos import Campo
@@ -18,6 +19,9 @@ class BcpPanel(Panel):
             etiqueta = QLabel(campo.etiqueta)
             etiqueta.setObjectName("Muted")
             valor = QLabel("—")
+            valor.setTextFormat(Qt.PlainText)
+            valor.setMinimumWidth(0)
+            valor.setWordWrap(True)
             grid.addWidget(etiqueta, fila, col * 2)
             grid.addWidget(valor, fila, col * 2 + 1)
             self._valores.append(valor)

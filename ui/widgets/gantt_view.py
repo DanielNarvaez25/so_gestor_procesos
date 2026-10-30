@@ -9,8 +9,8 @@ from utils.formato import ms, tooltip_proceso
 
 from .panel import Panel
 
-MARGEN_IZQ, MARGEN_DER, MARGEN_SUP, MARGEN_INF = 44, 14, 8, 24
-ALTO_FILA, ALTO_BARRA = 30, 20
+MARGEN_IZQ, MARGEN_DER, MARGEN_SUP, MARGEN_INF = 66, 32, 14, 28
+ALTO_FILA, ALTO_BARRA = 36, 24
 PASOS = [100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000]
 
 
@@ -18,6 +18,7 @@ class _Lienzo(QWidget):
     def __init__(self, linea, buscar, parent=None):
         super().__init__(parent)
         self._linea = linea
+        self._segmentos = []
         self._buscar = buscar          # pid -> Proceso | None
         self._filas: list[int] = []    # pids, en orden de primera aparición
         self._hover = None
@@ -27,10 +28,13 @@ class _Lienzo(QWidget):
 
     def refrescar(self, reloj: int):
         self.reloj = reloj
+        self._segmentos = list(self._linea.segmentos)
         vistos = {}
-        for s in self._linea.segmentos:
+        for s in self._segmentos:
             vistos.setdefault(s.pid, None)
         self._filas = list(vistos)
+        if not self._segmentos:
+            self._hover = None
         self.setMinimumHeight(MARGEN_SUP + max(1, len(self._filas)) * ALTO_FILA + MARGEN_INF)
         self.update()
 
@@ -46,13 +50,13 @@ class _Lienzo(QWidget):
 
     def _rect(self, s, t0: int) -> QRectF:
         fila = self._filas.index(s.pid)
-        x1, x2 = self._x(s.inicio, t0), self._x(s.fin, t0)
+        x1, x2 = self._x(max(s.inicio, t0), t0), self._x(min(s.fin, t0 + config.GANTT_VENTANA_MS), t0)
         y = MARGEN_SUP + fila * ALTO_FILA + (ALTO_FILA - ALTO_BARRA) / 2
         return QRectF(x1, y, max(2.0, x2 - x1), ALTO_BARRA)
 
     def _segmento_en(self, pos):
         t0, t1 = self._rango()
-        for s in reversed(self._linea.segmentos):
+        for s in reversed(self._segmentos):
             if s.fin >= t0 and s.inicio <= t1 and self._rect(s, t0).contains(pos):
                 return s
         return None
@@ -101,13 +105,13 @@ class _Lienzo(QWidget):
         for i, pid in enumerate(self._filas):
             p = self._buscar(pid)
             g.drawText(QRectF(4, MARGEN_SUP + i * ALTO_FILA, MARGEN_IZQ - 8, ALTO_FILA),
-                       Qt.AlignVCenter | Qt.AlignLeft, f"P{p.letra}" if p else str(pid))
+                       Qt.AlignVCenter | Qt.AlignLeft, str(pid))
 
-        if not self._linea.segmentos:
-            g.drawText(self.rect(), Qt.AlignCenter, "Aún no hay actividad. Presiona Iniciar.")
+        if not self._segmentos:
+            g.drawText(self.rect(), Qt.AlignCenter, "Agrega procesos e inicia la simulación para ver su recorrido.")
 
         # barras
-        for s in self._linea.segmentos:
+        for s in self._segmentos:
             if s.fin < t0 or s.inicio > t1:
                 continue
             r = self._rect(s, t0)
@@ -131,7 +135,7 @@ class _Lienzo(QWidget):
 
 class GanttView(Panel):
     def __init__(self, linea, buscar, parent=None):
-        super().__init__("LÍNEA DE TIEMPO DE EJECUCIÓN", parent)
+        super().__init__("GANTT / RECORRIDO DE CPU", parent)
         self._lienzo = _Lienzo(linea, buscar)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)

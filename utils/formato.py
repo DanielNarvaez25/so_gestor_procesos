@@ -1,4 +1,6 @@
 """Formato de textos (sin Qt): tiempos y HTML de los tooltips."""
+from html import escape
+
 from . import colors
 
 
@@ -12,7 +14,7 @@ def tooltip_proceso(p, seg=None) -> str:
     `seg` (opcional) agrega los datos del segmento del Gantt bajo el cursor."""
     estado = colors.color_estado(p.estado)
     filas = [
-        f"<b style='color:{p.color}'>{p.nombre}</b> &nbsp;(PID {p.pid})",
+        f"<b style='color:{p.color}'>{escape(p.nombre)}</b> &nbsp;(PID {p.pid})",
         f"Estado: <b style='color:{estado}'>{p.estado.value}</b>",
         f"Prioridad: {p.prioridad} &nbsp;·&nbsp; Quantum: {ms(p.quantum)}",
         f"Ejecutado: {ms(p.tiempo_ejecutado)} / {ms(p.tiempo_total)} ({p.progreso_total}%)",

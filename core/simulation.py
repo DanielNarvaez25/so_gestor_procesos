@@ -66,15 +66,22 @@ class Simulation(QObject):
         self._timer.setInterval(ms_reales)
 
     def set_rata(self, rata: int):
+        if rata not in config.RATAS_QUANTUM:
+            raise ValueError("Rata de quantum no admitida")
         self.rata = rata
+        # El turno en curso conserva su quantum y su E/S programada.
         for p in self.procesos.values():
-            if p.estado is not Estado.TERMINADO:
+            if p.estado not in (Estado.TERMINADO, Estado.EJECUCION):
                 p.quantum = scheduler.calcular_quantum(p.tiempo_total, rata)
-        self._log(f"Rata de quantum = {rata}. Quantums recalculados.")
+        self._log(f"Rata de quantum = {rata}. Se aplicará desde el próximo turno de CPU.")
         self.cambio.emit()
 
     # ---------- procesos ----------
     def agregar_proceso(self, nombre="", prioridad=3, tiempo_total=None, interactividad=None) -> Proceso:
+        if tiempo_total is not None and (not isinstance(tiempo_total, int) or isinstance(tiempo_total, bool) or tiempo_total <= 0):
+            raise ValueError("El tiempo total debe ser un entero positivo")
+        if interactividad is not None and (not isinstance(interactividad, int) or not 0 <= interactividad <= 100):
+            raise ValueError("La interactividad debe estar entre 0 y 100")
         pid = self._siguiente_pid
         self._siguiente_pid += 1
         indice = pid - config.PID_INICIAL
@@ -108,43 +115,55 @@ class Simulation(QObject):
 
     # ---------- ciclo ----------
     def paso(self):
-        self.reloj += config.TICK_MS
-
-        # 1. Suspendidos avanzan su E/S
-        for p in list(self.suspendidos):
-            p.bloqueo_restante -= config.TICK_MS
-            if p.bloqueo_restante <= 0:
-                self.suspendidos.remove(p)
-                self._log(f"{p.nombre} termina su E/S.")
-                self._a_preparados(p)
-
-        # 2. Preparados esperan
-        for p in self.preparados:
-            p.tiempo_espera += config.TICK_MS
-
-        # 3. Proceso en CPU
-        p = self.en_cpu
-        if p:
-            p.tiempo_ejecutado += config.TICK_MS
-            p.quantum_usado += config.TICK_MS
-            self.linea.extender(self.reloj)
-            self.segmento.emit(self.linea.abierto)
-            if p.tiempo_ejecutado >= p.tiempo_total:
-                self._terminar(p)
-            elif p.bloqueo_en is not None and p.quantum_usado >= p.bloqueo_en:
-                self._bloquear(p)
-            elif p.quantum_usado >= p.quantum:
-                self._expropiar(p)
-
-        # 4. CPU libre -> planificador
+        """Avanza un tick resolviendo los eventos en su instante exacto."""
         if self.en_cpu is None:
             self._despachar()
+        limite = self.reloj + config.TICK_MS
+        while self.reloj < limite and (self.en_cpu or self.preparados or self.suspendidos):
+            p = self.en_cpu
+            delta = limite - self.reloj
+            if p is not None:
+                delta = min(delta, p.tiempo_restante, p.quantum - p.quantum_usado)
+                if p.bloqueo_en is not None:
+                    delta = min(delta, p.bloqueo_en - p.quantum_usado)
+            if self.suspendidos:
+                delta = min(delta, min(q.bloqueo_restante for q in self.suspendidos))
 
+            # Solo acumulan espera quienes estuvieron preparados en este intervalo.
+            for q in self.preparados:
+                q.tiempo_espera += delta
+            for q in self.suspendidos:
+                q.bloqueo_restante -= delta
+            self.reloj += delta
+            if p is not None:
+                p.tiempo_ejecutado += delta
+                p.quantum_usado += delta
+                self.linea.extender(self.reloj)
+                self.segmento.emit(self.linea.abierto)
+
+            for q in list(self.suspendidos):
+                if q.bloqueo_restante == 0:
+                    self.suspendidos.remove(q)
+                    self._log(f"{q.nombre} termina su E/S.")
+                    self._a_preparados(q)
+            if p is not None:
+                if p.tiempo_restante == 0:
+                    self._terminar(p)
+                elif p.bloqueo_en is not None and p.quantum_usado >= p.bloqueo_en:
+                    self._bloquear(p)
+                elif p.quantum_usado >= p.quantum:
+                    self._expropiar(p)
+            if self.en_cpu is None:
+                self._despachar()
+
+        if not (self.en_cpu or self.preparados or self.suspendidos):
+            self.pausar()
         self.tick.emit(self.reloj)
         self.cambio.emit()
 
     def _a_preparados(self, p: Proceso):
         p.estado = Estado.PREPARADO
+        p.quantum = scheduler.calcular_quantum(p.tiempo_total, self.rata)
         self._contador_cola += 1
         p.orden_cola = self._contador_cola
         self.preparados.append(p)
@@ -156,6 +175,7 @@ class Simulation(QObject):
         razones = scheduler.explicar(p, self.preparados)
         self.preparados.remove(p)
         p.estado = Estado.EJECUCION
+        p.quantum = scheduler.calcular_quantum(p.tiempo_total, self.rata)
         p.quantum_usado = 0
         p.bloqueo_en = self._decidir_bloqueo(p)
         self.en_cpu = p

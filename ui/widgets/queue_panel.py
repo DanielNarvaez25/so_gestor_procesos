@@ -20,6 +20,7 @@ class QueuePanel(Panel):
         self._lista.setSpacing(6)
         self._vacio = QLabel(vacio)
         self._vacio.setObjectName("Muted")
+        self._vacio.setWordWrap(True)
         self._lista.addWidget(self._vacio)
         self._lista.addStretch()
 

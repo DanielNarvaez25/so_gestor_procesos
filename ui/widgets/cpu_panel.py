@@ -5,18 +5,19 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QProgressBar, QVBoxLayout
 from utils import colors
 
 from .panel import Panel
+from .elided_label import ElidedLabel
 
 
 class CpuPanel(Panel):
     def __init__(self, parent=None):
-        super().__init__("PROCESO EN CPU", parent)
+        super().__init__("CPU / EJECUCIÓN ACTUAL", parent)
         self._badge = QLabel("–")
         self._badge.setObjectName("Badge")
         self._badge.setFixedSize(72, 72)
         self._badge.setAlignment(Qt.AlignCenter)
         self._badge.setStyleSheet(f"QLabel#Badge {{ background: {colors.BORDER}; font-size: 28px; }}")
 
-        self._nombre = QLabel("CPU libre")
+        self._nombre = ElidedLabel("CPU libre")
         self._nombre.setObjectName("Big")
         self._detalle = QLabel("Sin proceso en ejecución")
         self._detalle.setObjectName("Muted")
@@ -39,6 +40,12 @@ class CpuPanel(Panel):
         self._barra.setFixedHeight(16)
         self.cuerpo.addWidget(etiqueta)
         self.cuerpo.addWidget(self._barra)
+        self._total = QProgressBar()
+        self._total.setObjectName("TotalProgress")
+        self._total.setRange(0, 100)
+        self._total.setFixedHeight(16)
+        self.cuerpo.addWidget(QLabel("Progreso total del proceso"))
+        self.cuerpo.addWidget(self._total)
 
     def actualizar(self, p):
         if p is None:
@@ -47,9 +54,11 @@ class CpuPanel(Panel):
             self._nombre.setText("CPU libre")
             self._detalle.setText("Sin proceso en ejecución")
             self._barra.setValue(0)
+            self._total.setValue(0)
             return
         self._badge.setText(p.letra)
         self._badge.setStyleSheet(f"QLabel#Badge {{ background: {p.color}; font-size: 28px; }}")
         self._nombre.setText(p.nombre)
         self._detalle.setText(f"PID {p.pid}  ·  Prioridad {p.prioridad}")
         self._barra.setValue(p.progreso_quantum)
+        self._total.setValue(p.progreso_total)
