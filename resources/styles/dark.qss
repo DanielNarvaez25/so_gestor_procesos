@@ -1,0 +1,54 @@
+/* Plantilla de estilos. Cada texto entre dobles llaves se reemplaza por la variable del mismo nombre en utils/colors.py */
+
+* { font-family: "Segoe UI", sans-serif; font-size: 12px; color: {{TEXT}}; }
+
+QMainWindow, QWidget#Root { background: {{BG_APP}}; }
+
+/* Paneles y tarjetas */
+QFrame#Panel { background: {{BG_PANEL}}; border: 1px solid {{BORDER}}; border-radius: 10px; }
+QFrame#Card  { background: {{BG_PANEL_ALT}}; border: 1px solid {{BORDER}}; border-radius: 8px; }
+QLabel#PanelTitle { color: {{TEXT_MUTED}}; font-weight: 600; }
+QLabel#Muted { color: {{TEXT_MUTED}}; }
+
+/* Botones */
+QPushButton { background: {{BG_PANEL}}; border: 1px solid {{BORDER}}; border-radius: 6px; padding: 7px 14px; }
+QPushButton:hover { background: {{BG_HOVER}}; }
+QPushButton#Primary { background: {{ACCENT}}; color: {{TEXT_ON_ACCENT}}; border: none; font-weight: 600; }
+QPushButton#Primary:hover { background: {{ACCENT_HOVER}}; }
+QPushButton#Danger { background: {{DANGER}}; border: none; font-weight: 600; }
+
+/* Entradas */
+QLineEdit, QComboBox, QSpinBox { background: {{BG_INPUT}}; border: 1px solid {{BORDER}}; border-radius: 5px; padding: 5px 8px; }
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus { border-color: {{ACCENT}}; }
+QComboBox QAbstractItemView { background: {{BG_PANEL}}; selection-background-color: {{ACCENT}}; border: 1px solid {{BORDER}}; }
+
+/* Progreso (quantum) */
+QProgressBar { background: {{GANTT_BG}}; border: none; border-radius: 4px; text-align: center; }
+QProgressBar::chunk { background: {{STATE_EJECUCION}}; border-radius: 4px; }
+
+/* Listas / scroll */
+QScrollArea, QListWidget { background: transparent; border: none; }
+QScrollArea > QWidget > QWidget { background: transparent; }
+QScrollBar:vertical { background: transparent; width: 8px; }
+QScrollBar::handle:vertical { background: {{BORDER}}; border-radius: 4px; min-height: 20px; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+
+/* Info al pasar el mouse (barras del Gantt, tarjetas) */
+QToolTip { background: {{TOOLTIP_BG}}; color: {{TOOLTIP_TEXT}}; border: 1px solid {{BORDER}}; padding: 6px; }
+
+/* Selección de tarjetas */
+QFrame#Card[sel="true"] { background: {{BG_HOVER}}; }
+
+/* Etiquetas especiales */
+QLabel#Badge { color: {{TEXT_ON_ACCENT}}; font-weight: 700; font-size: 16px; border-radius: 8px; }
+QLabel#Big { font-size: 18px; font-weight: 700; }
+QLabel#Title { color: {{ACCENT}}; font-size: 14px; font-weight: 700; }
+
+/* Tablas de BCP */
+QTableWidget { background: {{BG_PANEL_ALT}}; border: none; border-radius: 6px; }
+QTableWidget::item { padding: 4px 6px; border-bottom: 1px solid {{BORDER}}; }
+QHeaderView::section { background: {{BG_PANEL}}; color: {{TEXT_MUTED}}; border: none; border-bottom: 1px solid {{BORDER}}; padding: 5px 6px; font-weight: 600; }
+QPushButton:disabled { color: {{TEXT_MUTED}}; }
+
+/* Barra de estado (último evento) */
+QStatusBar { background: {{BG_APP}}; color: {{TEXT_MUTED}}; }
