@@ -34,8 +34,7 @@ class ControladorSimulacion(QObject):
         t.velocidad_cambiada.connect(self.set_velocidad)
         vista.form.enviar.connect(self.agregar_desde_formulario)
         vista.form.aleatorio.connect(self.agregar_aleatorio)
-        for panel in (vista.preparados, vista.suspendidos, vista.terminados,
-                      vista.tabla_preparados, vista.tabla_suspendidos):
+        for panel in (vista.preparados, vista.suspendidos, vista.terminados):
             panel.seleccionado.connect(self.seleccionar)
         self.cambio.connect(self.refrescar)
         self.evento.connect(vista.mostrar_evento)

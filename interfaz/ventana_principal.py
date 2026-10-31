@@ -1,11 +1,10 @@
 """Tablero de simulación: controles, colas y análisis de la ejecución."""
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QHBoxLayout, QLabel, QMainWindow, QPlainTextEdit,
+from PySide6.QtWidgets import (QHBoxLayout, QLabel, QMainWindow,
     QSplitter, QTabWidget, QVBoxLayout, QWidget, QScrollArea)
 from aplicacion.controlador import ControladorSimulacion
 from .componentes import bcp_campos
 from .componentes.panel_bcp import BcpPanel
-from .componentes.tabla_bcp import BcpTable
 from .componentes.panel_cpu import CpuPanel
 from .componentes.grafico_gantt import GanttView
 from .componentes.formulario_proceso import ProcessForm
@@ -81,24 +80,13 @@ class VentanaPrincipal(QMainWindow):
         cpu_layout.addWidget(self.cpu, 3)
         cpu_layout.addWidget(self.bcp_ejecucion, 2)
         self.gantt = GanttView(self.controlador.motor.linea, self.controlador.motor.buscar)
-        self.gantt.setMinimumHeight(240)
-        self.bcp_seleccionado = BcpPanel("DETALLE DEL PROCESO SELECCIONADO", bcp_campos.SELECCIONADO, columnas=3)
-        self.tabla_preparados = BcpTable("BCP · PREPARADOS", bcp_campos.TABLA_PREPARADOS)
-        self.tabla_suspendidos = BcpTable("BCP · SUSPENDIDOS", bcp_campos.TABLA_SUSPENDIDOS)
-        self.eventos = QPlainTextEdit()
-        self.eventos.setReadOnly(True)
-        self.eventos.setMaximumBlockCount(1000)
-        self.eventos.setPlaceholderText("Aquí verás las decisiones del planificador y los cambios de estado.")
-        self.detalles = QTabWidget()
-        for panel, title in [(self.bcp_seleccionado, "Inspector"), (self.tabla_preparados, "BCP preparados"),
-                             (self.tabla_suspendidos, "BCP suspendidos"), (self.eventos, "Eventos")]:
-            self.detalles.addTab(panel, title)
-        self.detalles.setMinimumHeight(155)
+        self.gantt.setMinimumHeight(360)
         dashboard = QSplitter(Qt.Vertical)
         dashboard.setChildrenCollapsible(False)
-        for widget in (cpu_row, self.gantt, self.detalles):
+        for widget in (cpu_row, self.gantt):
             dashboard.addWidget(widget)
-        dashboard.setSizes([230, 290, 190])
+        dashboard.setSizes([230, 480])
+        dashboard.setStretchFactor(0, 0)
         dashboard.setStretchFactor(1, 1)
         body = QSplitter(Qt.Horizontal)
         body.setChildrenCollapsible(False)
@@ -125,9 +113,6 @@ class VentanaPrincipal(QMainWindow):
             self.colas.setTabText(i, f"{title} · {len(queue)}")
         self.cpu.actualizar(s.en_cpu)
         self.bcp_ejecucion.actualizar(s.en_cpu)
-        self.bcp_seleccionado.actualizar(s.buscar(seleccion) if seleccion is not None else None)
-        self.tabla_preparados.actualizar(preparados)
-        self.tabla_suspendidos.actualizar(s.suspendidos)
         self.gantt.refrescar(s.reloj)
         self.summary.actualizar(s)
         hay_trabajo = bool(s.en_cpu or s.preparados or s.suspendidos)
@@ -135,8 +120,7 @@ class VentanaPrincipal(QMainWindow):
         self.estado.setText("●  En curso" if corriendo else "●  En pausa" if hay_trabajo else "✓  Completado" if s.terminados else "●  Sin procesos")
 
     def limpiar_eventos(self):
-        self.eventos.clear()
+        self.statusBar().clearMessage()
 
     def mostrar_evento(self, mensaje):
-        self.eventos.appendPlainText(mensaje)
         self.statusBar().showMessage(mensaje)

@@ -56,11 +56,11 @@ class InterfaceTests(unittest.TestCase):
             self.assertFalse(w.toolbar._play.isEnabled())
             w.terminados.seleccionado.emit(101)
             self.assertEqual(w.controlador.seleccion, 101)
-            self.assertIn("terminó", w.eventos.toPlainText())
+            self.assertIn("terminó", w.statusBar().currentMessage())
             w.controlador.reiniciar()
             self.assertIsNone(w.controlador.seleccion)
             self.assertEqual(w.summary.valores[0].text(), "0 ms")
-            self.assertNotIn("terminó", w.eventos.toPlainText())
+            self.assertNotIn("terminó", w.statusBar().currentMessage())
         finally:
             w.controlador.pausar()
             w.close()
