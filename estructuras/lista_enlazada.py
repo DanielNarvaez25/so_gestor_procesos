@@ -24,7 +24,6 @@ class ListaEnlazada:
         nuevo_nodo = Nodo(dato)
         lista_esta_vacia = self._ultimo is None
         if lista_esta_vacia:
-            # El primer nodo también será el último.
             self._primero = nuevo_nodo
         else:
             self._ultimo.siguiente = nuevo_nodo
@@ -42,21 +41,17 @@ class ListaEnlazada:
                 es_primer_nodo = nodo_anterior is None
                 es_ultimo_nodo = nodo_actual is self._ultimo
 
-                # 1. Saltamos el nodo eliminado al reparar el enlace de entrada.
                 if es_primer_nodo:
                     self._primero = nodo_siguiente
                 else:
                     nodo_anterior.siguiente = nodo_siguiente
 
-                # 2. Si era el último, su anterior pasa a ser el nuevo final.
                 if es_ultimo_nodo:
                     self._ultimo = nodo_anterior
 
-                # 3. Actualizamos el tamaño y terminamos la búsqueda.
                 self._cantidad -= 1
                 return
 
-            # Todavía no lo encontramos: avanzamos un nodo, conservando el anterior.
             nodo_anterior = nodo_actual
             nodo_actual = nodo_actual.siguiente
         raise ValueError("El dato no se encuentra en la lista enlazada")
