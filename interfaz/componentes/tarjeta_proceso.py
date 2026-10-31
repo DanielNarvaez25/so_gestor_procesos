@@ -1,8 +1,9 @@
+from interfaz.estilos import colores as colors
 """Tarjeta de un proceso dentro de una cola."""
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
 
-from utils.formato import tooltip_proceso
+from interfaz.formato import tooltip_proceso
 
 
 class ProcessCard(QFrame):
@@ -13,13 +14,13 @@ class ProcessCard(QFrame):
         self.setObjectName("Card")
         self.pid = p.pid
         self.setCursor(Qt.PointingHandCursor)
-        # el color del proceso viene de utils/colors.py (PALETA_PROCESOS) a través de p.color
+        # el color del proceso viene de interfaz/estilos/colores.py (PALETA_PROCESOS) a través de colors.color_pid(p.pid)
 
         self._badge = QLabel(p.letra)
         self._badge.setObjectName("Badge")
         self._badge.setFixedSize(34, 34)
         self._badge.setAlignment(Qt.AlignCenter)
-        self._badge.setStyleSheet(f"QLabel#Badge {{ background: {p.color}; }}")
+        self._badge.setStyleSheet(f"QLabel#Badge {{ background: {colors.color_pid(p.pid)}; }}")
 
         self._nombre = QLabel()
         self._nombre.setTextFormat(Qt.PlainText)

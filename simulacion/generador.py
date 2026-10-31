@@ -1,7 +1,7 @@
 """Datos aleatorios para el botón 'Generar aleatorio'."""
 import random
 
-from core import config
+from simulacion import configuracion as config
 
 
 def datos_aleatorios(rng: random.Random | None = None) -> dict:

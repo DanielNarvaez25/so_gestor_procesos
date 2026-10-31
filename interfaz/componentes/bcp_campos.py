@@ -3,8 +3,8 @@ edita las listas de abajo; los widgets no cambian."""
 from dataclasses import dataclass
 from typing import Callable
 
-from utils import colors
-from utils.formato import ms
+from interfaz.estilos import colores as colors
+from interfaz.formato import ms
 
 
 @dataclass

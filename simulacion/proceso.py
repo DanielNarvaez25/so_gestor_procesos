@@ -1,7 +1,7 @@
 """Proceso = BCP (bloque de control de proceso). Sin dependencias de Qt."""
 from dataclasses import dataclass
 
-from .states import Estado
+from .estados import Estado
 
 
 @dataclass
@@ -11,7 +11,6 @@ class Proceso:
     prioridad: int
     tiempo_total: int            # ms de CPU que necesita en total
     quantum: int                 # ms por turno
-    color: str
     interactividad: int = 0      # % de probabilidad de pedir E/S en cada turno
     estado: Estado = Estado.PREPARADO
 

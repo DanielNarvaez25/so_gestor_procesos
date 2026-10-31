@@ -1,7 +1,7 @@
 """Indicadores de estado de la simulación."""
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
-from utils import colors
-from utils.formato import ms
+from interfaz.estilos import colores as colors
+from interfaz.formato import ms
 
 class Summary(QWidget):
     def __init__(self, parent=None):
@@ -13,8 +13,9 @@ class Summary(QWidget):
         for title, color in [("RELOJ SIMULADO", colors.TEXT), ("PREPARADOS", colors.STATE_PREPARADO), ("EN E/S", colors.STATE_SUSPENDIDO), ("TERMINADOS", colors.STATE_TERMINADO)]:
             card = QFrame()
             card.setObjectName("Metric")
+            card.setStyleSheet(f"QFrame#Metric {{ border-top: 3px solid {color}; }}")
             box = QVBoxLayout(card)
-            box.setContentsMargins(16, 10, 16, 10)
+            box.setContentsMargins(18, 12, 18, 12)
             label = QLabel(title)
             label.setObjectName("PanelTitle")
             value = QLabel("0")

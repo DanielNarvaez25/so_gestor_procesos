@@ -3,7 +3,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableWidget, QTableWidgetItem
 
-from utils import colors
+from interfaz.estilos import colores as colors
 
 from .bcp_campos import Campo
 from .panel import Panel

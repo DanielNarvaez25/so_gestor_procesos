@@ -7,9 +7,9 @@ QFrame#Card[sel="true"] { background: {{BG_HOVER}}; border: 1px solid {{ACCENT}}
 QLabel { background: transparent; }
 QLabel#PanelTitle { color: {{TEXT_MUTED}}; font-size: 11px; font-weight: 700; }
 QLabel#Muted { color: {{TEXT_MUTED}}; }
-QLabel#Title { font-size: 25px; font-weight: 700; }
+QLabel#Title { font-size: 29px; font-weight: 700; }
 QLabel#Big { font-size: 21px; font-weight: 700; }
-QLabel#MetricValue { font-size: 23px; font-weight: 600; }
+QLabel#MetricValue { font-size: 30px; font-weight: 700; }
 QLabel#Brand { background: {{ACCENT}}; color: {{TEXT_ON_ACCENT}}; border-radius: 12px; font-size: 20px; font-weight: 800; }
 QLabel#State { color: {{ACCENT}}; background: {{BG_PANEL_ALT}}; border: 1px solid {{BORDER}}; border-radius: 12px; padding: 7px 14px; font-weight: 600; }
 QLabel#Badge { color: {{TEXT_ON_ACCENT}}; font-weight: 700; font-size: 16px; border-radius: 10px; }
@@ -30,8 +30,8 @@ QScrollArea { background: transparent; border: none; }
 QScrollArea > QWidget > QWidget { background: transparent; }
 QScrollBar:vertical { background: transparent; width: 8px; }
 QScrollBar::handle:vertical { background: {{BORDER}}; border-radius: 4px; min-height: 24px; }
-QScrollBar:horizontal { background: transparent; height: 8px; }
-QScrollBar::handle:horizontal { background: {{BORDER}}; border-radius: 4px; min-width: 24px; }
+QScrollBar:horizontal { background: {{BG_INPUT}}; height: 14px; border-radius: 7px; }
+QScrollBar::handle:horizontal { background: {{TEXT_MUTED}}; border-radius: 6px; min-width: 40px; }
 QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QTabWidget::pane { background: {{BG_PANEL}}; border: 1px solid {{BORDER}}; border-radius: 10px; top: -1px; }
 QTabBar::tab { color: {{TEXT_MUTED}}; padding: 10px 12px; border-bottom: 2px solid transparent; }
@@ -46,3 +46,18 @@ QToolTip { background: {{TOOLTIP_BG}}; color: {{TOOLTIP_TEXT}}; border: 1px soli
 QSplitter::handle { background: {{BG_APP}}; }
 QSplitter::handle:hover { background: {{BORDER}}; }
 QStatusBar { background: {{BG_APP}}; color: {{TEXT_MUTED}}; font-size: 11px; }
+
+QWidget#Hero { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {{HERO_START}},stop:1 {{HERO_END}}); border: 1px solid {{BORDER}}; border-radius: 18px; }
+QLabel#Eyebrow { color: {{ACCENT}}; font-size: 10px; font-weight: 700; letter-spacing: 2px; }
+QFrame#Toolbar { background: {{BG_PANEL_ALT}}; border-radius: 14px; }
+QFrame#Panel { border-radius: 14px; }
+QLabel#PanelTitle { color: {{TEXT}}; padding-bottom: 4px; }
+QPushButton { min-height: 18px; }
+QPushButton:checked { background: {{BG_HOVER}}; border-color: {{ACCENT}}; }
+QPushButton:focus, QComboBox:focus { border: 1px solid {{ACCENT}}; }
+QCheckBox { spacing: 7px; color: {{TEXT_MUTED}}; }
+QCheckBox::indicator { width: 15px; height: 15px; border: 1px solid {{BORDER}}; border-radius: 4px; background: {{BG_INPUT}}; }
+QCheckBox::indicator:checked { background: {{ACCENT}}; border-color: {{ACCENT}}; }
+QScrollBar::handle:horizontal:hover, QScrollBar::handle:vertical:hover { background: {{ACCENT}}; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+QTabBar::tab:selected { background: {{BG_PANEL_ALT}}; border-top-left-radius: 8px; border-top-right-radius: 8px; }

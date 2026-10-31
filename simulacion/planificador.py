@@ -1,5 +1,5 @@
 """Algoritmo PMA-QMG-P: Prioridad Más Alta -> Quantum Más Grande -> Primero."""
-from .config import TICK_MS
+from .configuracion import TICK_MS
 
 
 def calcular_quantum(tiempo_total: int, rata: int) -> int:

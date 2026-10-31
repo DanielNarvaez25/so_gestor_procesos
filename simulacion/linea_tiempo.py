@@ -6,7 +6,6 @@ from dataclasses import dataclass
 class Segmento:
     pid: int
     nombre: str
-    color: str
     prioridad: int
     inicio: int
     fin: int
@@ -26,7 +25,7 @@ class LineaTiempo:
         return self._abierto
 
     def abrir(self, proceso, t: int) -> Segmento:
-        self._abierto = Segmento(proceso.pid, proceso.nombre, proceso.color, proceso.prioridad, t, t)
+        self._abierto = Segmento(proceso.pid, proceso.nombre, proceso.prioridad, t, t)
         self.segmentos.append(self._abierto)
         return self._abierto
 

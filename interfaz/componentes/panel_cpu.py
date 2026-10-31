@@ -2,10 +2,10 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QProgressBar, QVBoxLayout
 
-from utils import colors
+from interfaz.estilos import colores as colors
 
 from .panel import Panel
-from .elided_label import ElidedLabel
+from .etiqueta_elidida import ElidedLabel
 
 
 class CpuPanel(Panel):
@@ -57,7 +57,7 @@ class CpuPanel(Panel):
             self._total.setValue(0)
             return
         self._badge.setText(p.letra)
-        self._badge.setStyleSheet(f"QLabel#Badge {{ background: {p.color}; font-size: 28px; }}")
+        self._badge.setStyleSheet(f"QLabel#Badge {{ background: {colors.color_pid(p.pid)}; font-size: 28px; }}")
         self._nombre.setText(p.nombre)
         self._detalle.setText(f"PID {p.pid}  ·  Prioridad {p.prioridad}")
         self._barra.setValue(p.progreso_quantum)

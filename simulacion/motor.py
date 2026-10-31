@@ -1,31 +1,18 @@
-"""Motor de la simulación. Único módulo del core que usa Qt (QObject, QTimer, Signal)."""
+"""Reglas de simulación y tiempo virtual. No depende de Qt ni de la interfaz."""
 import random
 
-from PySide6.QtCore import QObject, QTimer, Signal
-
-from utils import colors
-
-from . import config, scheduler
-from .process import Proceso
-from .states import Estado
-from .timeline import LineaTiempo
+from . import configuracion as config, planificador as scheduler
+from .proceso import Proceso
+from .estados import Estado
+from .linea_tiempo import LineaTiempo
 
 
-class Simulation(QObject):
-    tick = Signal(int)          # nuevo valor del reloj (ms)
-    cambio = Signal()           # cambió alguna cola o proceso -> refrescar paneles
-    segmento = Signal(object)   # segmento del Gantt creado o extendido
-    evento = Signal(str)        # línea para el registro de eventos
-    reiniciado = Signal()
-
-    def __init__(self, parent=None, seed=None):
-        super().__init__(parent)
+class MotorSimulacion:
+    def __init__(self, seed=None):
         self._rng = random.Random(seed)
         self.rata = config.RATA_POR_DEFECTO
         self.linea = LineaTiempo()
-        self._timer = QTimer(self)
-        self._timer.setInterval(config.TICK_REAL_MS)
-        self._timer.timeout.connect(self.paso)
+        self.eventos: list[str] = []
         self._limpiar()
 
     # ---------- estado ----------
@@ -40,30 +27,29 @@ class Simulation(QObject):
         self.en_cpu: Proceso | None = None
 
     @property
-    def corriendo(self) -> bool:
-        return self._timer.isActive()
+    def hay_trabajo(self) -> bool:
+        return bool(self.en_cpu or self.preparados or self.suspendidos)
+
+    def preparados_ordenados(self):
+        return sorted(self.preparados, key=scheduler.clave_orden)
 
     def buscar(self, pid: int) -> Proceso | None:
         return self.procesos.get(pid)
 
     # ---------- controles ----------
-    def iniciar(self):
-        self._timer.start()
-
-    def pausar(self):
-        self._timer.stop()
-
     def reiniciar(self):
-        self.pausar()
         self._limpiar()
         self.linea.limpiar()
-        self.reiniciado.emit()
-        self.tick.emit(0)
-        self.cambio.emit()
-        self.evento.emit("Simulación reiniciada.")
+        self.eventos.clear()
+        self._log("Simulación reiniciada.")
 
-    def set_velocidad(self, ms_reales: int):
-        self._timer.setInterval(ms_reales)
+    def extraer_eventos(self) -> list[str]:
+        eventos, self.eventos = self.eventos, []
+        return eventos
+
+    def agregar_aleatorio(self, nombre=""):
+        from .generador import datos_aleatorios
+        return self.agregar_proceso(nombre, **datos_aleatorios(self._rng))
 
     def set_rata(self, rata: int):
         if rata not in config.RATAS_QUANTUM:
@@ -74,7 +60,6 @@ class Simulation(QObject):
             if p.estado not in (Estado.TERMINADO, Estado.EJECUCION):
                 p.quantum = scheduler.calcular_quantum(p.tiempo_total, rata)
         self._log(f"Rata de quantum = {rata}. Se aplicará desde el próximo turno de CPU.")
-        self.cambio.emit()
 
     # ---------- procesos ----------
     def agregar_proceso(self, nombre="", prioridad=3, tiempo_total=None, interactividad=None) -> Proceso:
@@ -95,14 +80,13 @@ class Simulation(QObject):
         p = Proceso(
             pid=pid, nombre=nombre, prioridad=prioridad, tiempo_total=tiempo_total,
             quantum=scheduler.calcular_quantum(tiempo_total, self.rata),
-            color=colors.color_proceso(indice), interactividad=interactividad,
+            interactividad=interactividad,
         )
         self.procesos[pid] = p
         self._log(f"{p.nombre} (PID {p.pid}) creado. Prioridad {p.prioridad}, quantum {p.quantum} ms.")
         self._a_preparados(p)
         if self.en_cpu is None:
             self._despachar()
-        self.cambio.emit()
         return p
 
     @staticmethod
@@ -139,7 +123,6 @@ class Simulation(QObject):
                 p.tiempo_ejecutado += delta
                 p.quantum_usado += delta
                 self.linea.extender(self.reloj)
-                self.segmento.emit(self.linea.abierto)
 
             for q in list(self.suspendidos):
                 if q.bloqueo_restante == 0:
@@ -156,10 +139,6 @@ class Simulation(QObject):
             if self.en_cpu is None:
                 self._despachar()
 
-        if not (self.en_cpu or self.preparados or self.suspendidos):
-            self.pausar()
-        self.tick.emit(self.reloj)
-        self.cambio.emit()
 
     def _a_preparados(self, p: Proceso):
         p.estado = Estado.PREPARADO
@@ -179,7 +158,7 @@ class Simulation(QObject):
         p.quantum_usado = 0
         p.bloqueo_en = self._decidir_bloqueo(p)
         self.en_cpu = p
-        self.segmento.emit(self.linea.abrir(p, self.reloj))
+        self.linea.abrir(p, self.reloj)
         self._log(f"{p.nombre} entra a CPU. " + " ".join(razones))
 
     def _decidir_bloqueo(self, p: Proceso):
@@ -213,4 +192,4 @@ class Simulation(QObject):
         self._a_preparados(p)
 
     def _log(self, msg: str):
-        self.evento.emit(f"[{self.reloj:>6} ms] {msg}")
+        self.eventos.append(f"[{self.reloj:>6} ms] {msg}")

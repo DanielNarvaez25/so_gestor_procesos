@@ -1,7 +1,7 @@
 """Creación manual y aleatoria de procesos."""
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox, QVBoxLayout
-from core import config
+from simulacion import configuracion as config
 from .panel import Panel
 
 class ProcessForm(Panel):

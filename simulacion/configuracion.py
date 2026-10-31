@@ -1,7 +1,6 @@
 """Parámetros de la simulación. Cambia los valores aquí, no en la lógica."""
 
 TICK_MS = 10                 # ms simulados que avanza cada tick
-TICK_REAL_MS = 100           # ms reales entre ticks (velocidad de la simulación)
 
 PID_INICIAL = 101
 PRIORIDAD_MIN = 1
@@ -20,4 +19,3 @@ CAUSAS_BLOQUEO = [
     "Operación de red",
 ]
 
-GANTT_VENTANA_MS = 6000      # ms visibles en la línea de tiempo (después hace scroll automático)

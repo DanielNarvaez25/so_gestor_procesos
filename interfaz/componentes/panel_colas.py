@@ -3,7 +3,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
 from .panel import Panel
-from .process_card import ProcessCard
+from .tarjeta_proceso import ProcessCard
 
 
 class QueuePanel(Panel):

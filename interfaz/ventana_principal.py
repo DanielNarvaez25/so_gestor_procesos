@@ -1,40 +1,43 @@
 """Tablero de simulación: controles, colas y análisis de la ejecución."""
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QHBoxLayout, QLabel, QMainWindow, QPlainTextEdit,
-    QSplitter, QTabWidget, QVBoxLayout, QWidget)
-from core import scheduler
-from core.simulation import Simulation
-from utils.random_generator import datos_aleatorios
-from .widgets import bcp_campos
-from .widgets.bcp_panel import BcpPanel
-from .widgets.bcp_table import BcpTable
-from .widgets.cpu_panel import CpuPanel
-from .widgets.gantt_view import GanttView
-from .widgets.process_form import ProcessForm
-from .widgets.queue_panel import QueuePanel
-from .widgets.summary import Summary
-from .widgets.toolbar import Toolbar
+    QSplitter, QTabWidget, QVBoxLayout, QWidget, QScrollArea)
+from aplicacion.controlador import ControladorSimulacion
+from .componentes import bcp_campos
+from .componentes.panel_bcp import BcpPanel
+from .componentes.tabla_bcp import BcpTable
+from .componentes.panel_cpu import CpuPanel
+from .componentes.grafico_gantt import GanttView
+from .componentes.formulario_proceso import ProcessForm
+from .componentes.panel_colas import QueuePanel
+from .componentes.resumen import Summary
+from .componentes.barra_controles import Toolbar
 
-class MainWindow(QMainWindow):
-    def __init__(self, sim: Simulation | None = None):
+class VentanaPrincipal(QMainWindow):
+    def __init__(self, controlador: ControladorSimulacion | None = None):
         super().__init__()
         self.setWindowTitle("Gestor de procesos · PMA-QMG-P")
-        self.resize(1440, 960)
+        self.resize(1440, 1040)
         self.setMinimumSize(1100, 820)
-        self.sim = sim or Simulation(self)
-        self._sel = None
+        self.controlador = controlador or ControladorSimulacion(self)
         root = QWidget()
         root.setObjectName("Root")
         layout = QVBoxLayout(root)
         layout.setContentsMargins(22, 18, 22, 8)
         layout.setSpacing(14)
-        header = QHBoxLayout()
+        hero = QWidget()
+        hero.setObjectName("Hero")
+        header = QHBoxLayout(hero)
+        header.setContentsMargins(20, 16, 20, 16)
         brand = QLabel("P/")
         brand.setObjectName("Brand")
         brand.setAlignment(Qt.AlignCenter)
         brand.setFixedSize(48, 48)
         header.addWidget(brand)
         titles = QVBoxLayout()
+        eyebrow = QLabel("LABORATORIO DE SISTEMAS OPERATIVOS")
+        eyebrow.setObjectName("Eyebrow")
+        titles.addWidget(eyebrow)
         titles.setSpacing(2)
         title = QLabel("Gestor de procesos")
         title.setObjectName("Title")
@@ -47,7 +50,7 @@ class MainWindow(QMainWindow):
         self.estado = QLabel()
         self.estado.setObjectName("State")
         header.addWidget(self.estado)
-        layout.addLayout(header)
+        layout.addWidget(hero)
         self.toolbar = Toolbar()
         layout.addWidget(self.toolbar)
         self.summary = Summary()
@@ -77,8 +80,8 @@ class MainWindow(QMainWindow):
         cpu_layout.setSpacing(12)
         cpu_layout.addWidget(self.cpu, 3)
         cpu_layout.addWidget(self.bcp_ejecucion, 2)
-        self.gantt = GanttView(self.sim.linea, self.sim.buscar)
-        self.gantt.setMinimumHeight(150)
+        self.gantt = GanttView(self.controlador.motor.linea, self.controlador.motor.buscar)
+        self.gantt.setMinimumHeight(240)
         self.bcp_seleccionado = BcpPanel("DETALLE DEL PROCESO SELECCIONADO", bcp_campos.SELECCIONADO, columnas=3)
         self.tabla_preparados = BcpTable("BCP · PREPARADOS", bcp_campos.TABLA_PREPARADOS)
         self.tabla_suspendidos = BcpTable("BCP · SUSPENDIDOS", bcp_campos.TABLA_SUSPENDIDOS)
@@ -95,7 +98,7 @@ class MainWindow(QMainWindow):
         dashboard.setChildrenCollapsible(False)
         for widget in (cpu_row, self.gantt, self.detalles):
             dashboard.addWidget(widget)
-        dashboard.setSizes([215, 265, 200])
+        dashboard.setSizes([230, 290, 190])
         dashboard.setStretchFactor(1, 1)
         body = QSplitter(Qt.Horizontal)
         body.setChildrenCollapsible(False)
@@ -104,71 +107,36 @@ class MainWindow(QMainWindow):
         body.setSizes([280, 1080])
         body.setStretchFactor(1, 1)
         layout.addWidget(body, 1)
-        self.setCentralWidget(root)
+        root.setMinimumHeight(960)
+        pagina = QScrollArea()
+        pagina.setWidgetResizable(True)
+        pagina.setWidget(root)
+        self.setCentralWidget(pagina)
         self.statusBar().showMessage("Listo para simular. Agrega un proceso o genera uno aleatorio.")
 
-        t = self.toolbar
-        t.alternar_form.connect(lambda: self.sidebar.setVisible(t._form.isChecked()))
-        t.iniciar.connect(self._iniciar)
-        t.pausar.connect(self._pausar)
-        t.paso.connect(self.sim.paso)
-        t.reiniciar.connect(self.sim.reiniciar)
-        t.rata_cambiada.connect(self.sim.set_rata)
-        t.velocidad_cambiada.connect(self.sim.set_velocidad)
-        self.form.enviar.connect(self._agregar)
-        self.form.aleatorio.connect(self._agregar_aleatorio)
-        for w in (self.preparados, self.suspendidos, self.terminados, self.tabla_preparados, self.tabla_suspendidos):
-            w.seleccionado.connect(self._seleccionar)
-        self.sim.cambio.connect(self._refrescar)
-        self.sim.reiniciado.connect(self._al_reiniciar)
-        self.sim.evento.connect(self._evento)
-        self._refrescar()
+        self.controlador.conectar_vista(self)
 
-    def _agregar(self):
-        p = self.sim.agregar_proceso(**self.form.datos())
-        self._seleccionar(p.pid)
-        self.form.limpiar()
-
-    def _agregar_aleatorio(self):
-        p = self.sim.agregar_proceso(self.form.nombre(), **datos_aleatorios())
-        self._seleccionar(p.pid)
-        self.form.limpiar()
-
-    def _iniciar(self):
-        self.sim.iniciar()
-        self._refrescar()
-
-    def _pausar(self):
-        self.sim.pausar()
-        self._refrescar()
-
-    def _seleccionar(self, pid):
-        self._sel = pid
-        self._refrescar()
-
-    def _al_reiniciar(self):
-        self._sel = None
-        self.eventos.clear()
-
-    def _evento(self, msg):
-        self.eventos.appendPlainText(msg)
-        self.statusBar().showMessage(msg)
-
-    def _refrescar(self):
-        s = self.sim
-        preparados = sorted(s.preparados, key=scheduler.clave_orden)
-        self.preparados.actualizar(preparados, self._sel)
-        self.suspendidos.actualizar(s.suspendidos, self._sel)
-        self.terminados.actualizar(s.terminados, self._sel)
+    def mostrar(self, s, seleccion, corriendo):
+        preparados = s.preparados_ordenados()
+        self.preparados.actualizar(preparados, seleccion)
+        self.suspendidos.actualizar(s.suspendidos, seleccion)
+        self.terminados.actualizar(s.terminados, seleccion)
         for i, (title, queue) in enumerate([("Listos", preparados), ("E/S", s.suspendidos), ("Fin", s.terminados)]):
             self.colas.setTabText(i, f"{title} · {len(queue)}")
         self.cpu.actualizar(s.en_cpu)
         self.bcp_ejecucion.actualizar(s.en_cpu)
-        self.bcp_seleccionado.actualizar(s.buscar(self._sel) if self._sel is not None else None)
+        self.bcp_seleccionado.actualizar(s.buscar(seleccion) if seleccion is not None else None)
         self.tabla_preparados.actualizar(preparados)
         self.tabla_suspendidos.actualizar(s.suspendidos)
         self.gantt.refrescar(s.reloj)
         self.summary.actualizar(s)
         hay_trabajo = bool(s.en_cpu or s.preparados or s.suspendidos)
-        self.toolbar.set_corriendo(s.corriendo, hay_trabajo)
-        self.estado.setText("●  En curso" if s.corriendo else "●  En pausa" if hay_trabajo else "✓  Completado" if s.terminados else "●  Sin procesos")
+        self.toolbar.set_corriendo(corriendo, hay_trabajo)
+        self.estado.setText("●  En curso" if corriendo else "●  En pausa" if hay_trabajo else "✓  Completado" if s.terminados else "●  Sin procesos")
+
+    def limpiar_eventos(self):
+        self.eventos.clear()
+
+    def mostrar_evento(self, mensaje):
+        self.eventos.appendPlainText(mensaje)
+        self.statusBar().showMessage(mensaje)

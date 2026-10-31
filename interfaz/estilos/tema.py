@@ -1,10 +1,10 @@
-"""Carga el QSS reemplazando {{VARIABLE}} por el valor definido en utils/colors.py."""
+"""Carga el QSS reemplazando {{VARIABLE}} por el valor definido en interfaz/estilos/colores.py."""
 import re
 from pathlib import Path
 
-from . import colors
+from interfaz.estilos import colores as colors
 
-RUTA_QSS = Path(__file__).resolve().parent.parent / "resources" / "styles" / "dark.qss"
+RUTA_QSS = Path(__file__).with_name("oscuro.qss")
 
 
 def _variables() -> dict[str, str]:
@@ -17,7 +17,7 @@ def cargar_qss(ruta: Path = RUTA_QSS) -> str:
     def reemplazo(m: re.Match) -> str:
         nombre = m.group(1)
         if nombre not in variables:
-            raise KeyError(f"El color '{nombre}' no existe en utils/colors.py")
+            raise KeyError(f"El color '{nombre}' no existe en interfaz/estilos/colores.py")
         return variables[nombre]
 
     return re.sub(r"\{\{(\w+)\}\}", reemplazo, Path(ruta).read_text(encoding="utf-8"))

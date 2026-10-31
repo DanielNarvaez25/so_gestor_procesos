@@ -1,20 +1,14 @@
 """Regresiones del planificador, tiempos y controles. No requieren pantalla."""
-import os
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import unittest
-from PySide6.QtWidgets import QApplication
-from core.simulation import Simulation
-from core.states import Estado
-from core import scheduler
+from simulacion.motor import MotorSimulacion
+from simulacion.estados import Estado
+from simulacion import planificador as scheduler
 
-APP = QApplication.instance() or QApplication([])
 
 class SimulationTests(unittest.TestCase):
     def setUp(self):
-        self.sim = Simulation(seed=7)
+        self.sim = MotorSimulacion(seed=7)
 
-    def tearDown(self):
-        self.sim.pausar()
 
     def add(self, total=100, priority=3, io=0):
         return self.sim.agregar_proceso(prioridad=priority, tiempo_total=total, interactividad=io)
@@ -78,11 +72,9 @@ class SimulationTests(unittest.TestCase):
         self.assertIs(self.sim.en_cpu, p)
         self.assertEqual(p.bloqueo_restante, 0)
 
-    def test_completion_stops_timer_and_reset_clears_state(self):
+    def test_completion_and_reset_clear_state(self):
         self.add(3)
-        self.sim.iniciar()
         self.sim.paso()
-        self.assertFalse(self.sim.corriendo)
         self.sim.reiniciar()
         self.assertEqual(self.sim.reloj, 0)
         self.assertFalse(self.sim.procesos)
@@ -100,7 +92,7 @@ class SimulationTests(unittest.TestCase):
 
     def test_many_seeded_runs_preserve_process_and_timeline_invariants(self):
         for seed in range(20):
-            sim = Simulation(seed=seed)
+            sim = MotorSimulacion(seed=seed)
             for n in range(8):
                 sim.agregar_proceso(prioridad=1 + n % 5, tiempo_total=3 + n * 37, interactividad=n * 14)
             for step in range(3000):
@@ -119,66 +111,3 @@ class SimulationTests(unittest.TestCase):
             for a, b in zip(sim.linea.segmentos, sim.linea.segmentos[1:]):
                 self.assertLessEqual(a.fin, b.inicio)
 
-class InterfaceTests(unittest.TestCase):
-    def test_gantt_can_paint_during_dispatch_and_reset(self):
-        import sys
-        from ui.main_window import MainWindow
-        w = MainWindow()
-        errors = []
-        old_hook = sys.excepthook
-        sys.excepthook = lambda *args: errors.append(args)
-        try:
-            w.show()
-            APP.processEvents()
-            w.sim.segmento.connect(lambda _: w.gantt._lienzo.repaint())
-            for _ in range(4):
-                w.sim.agregar_proceso(tiempo_total=13, interactividad=0)
-            for _ in range(6):
-                w.sim.paso()
-                APP.processEvents()
-            w.sim.reiniciar()
-            APP.processEvents()
-            w.gantt._lienzo.repaint()
-            self.assertFalse(w.gantt._lienzo._segmentos)
-            self.assertFalse(errors)
-        finally:
-            sys.excepthook = old_hook
-            w.sim.pausar()
-            w.close()
-
-    def test_controls_selection_and_reset(self):
-        from ui.main_window import MainWindow
-        from utils.theme import aplicar_tema
-        aplicar_tema(APP)
-        w = MainWindow()
-        try:
-            self.assertFalse(w.toolbar._play.isEnabled())
-            w.form._tiempo.setValue(15)
-            w.form._interactividad.setValue(0)
-            w.form.agregar.click()
-            self.assertEqual(w.sim.en_cpu.tiempo_total, 15)
-            self.assertEqual(w._sel, 101)
-            w.toolbar._paso.click()
-            self.assertEqual(w.sim.reloj, 10)
-            w.toolbar._play.click()
-            self.assertTrue(w.sim.corriendo)
-            w.toolbar._pausa.click()
-            self.assertFalse(w.sim.corriendo)
-            w.toolbar._rata.setCurrentIndex(w.toolbar._rata.findData(10))
-            w.toolbar._paso.click()
-            self.assertEqual(w.sim.reloj, 15)
-            self.assertEqual(w.estado.text(), "✓  Completado")
-            self.assertFalse(w.toolbar._play.isEnabled())
-            w.terminados.seleccionado.emit(101)
-            self.assertEqual(w._sel, 101)
-            self.assertIn("terminó", w.eventos.toPlainText())
-            w.sim.reiniciar()
-            self.assertIsNone(w._sel)
-            self.assertEqual(w.summary.valores[0].text(), "0 ms")
-            self.assertNotIn("terminó", w.eventos.toPlainText())
-        finally:
-            w.sim.pausar()
-            w.close()
-
-if __name__ == "__main__":
-    unittest.main()

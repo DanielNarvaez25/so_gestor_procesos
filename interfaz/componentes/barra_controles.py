@@ -1,7 +1,8 @@
+from aplicacion.temporizador import INTERVALO_REAL_MS
 """Controles de reproducción y configuración de la simulación."""
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton
-from core import config
+from simulacion import configuracion as config
 
 class Toolbar(QFrame):
     alternar_form = Signal()
@@ -37,7 +38,7 @@ class Toolbar(QFrame):
         self._rata.setToolTip("Quantum = tiempo total ÷ rata. Los cambios aplican al próximo turno.")
         self._rata.currentIndexChanged.connect(lambda _: self.rata_cambiada.emit(self._rata.currentData()))
         self._velocidad = QComboBox()
-        for text, interval in [("0,5×", 200), ("1×", config.TICK_REAL_MS), ("2×", 50), ("4×", 25)]:
+        for text, interval in [("0,5×", 200), ("1×", INTERVALO_REAL_MS), ("2×", 50), ("4×", 25)]:
             self._velocidad.addItem(text, interval)
         self._velocidad.setCurrentIndex(1)
         self._velocidad.setToolTip("Velocidad de reproducción; no cambia los tiempos simulados")
@@ -60,3 +61,6 @@ class Toolbar(QFrame):
         self._play.setEnabled(not corriendo and hay_trabajo)
         self._pausa.setEnabled(corriendo)
         self._paso.setEnabled(not corriendo and hay_trabajo)
+
+    def formulario_visible(self):
+        return self._form.isChecked()

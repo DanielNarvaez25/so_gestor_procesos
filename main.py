@@ -2,14 +2,18 @@ import sys
 
 from PySide6.QtWidgets import QApplication
 
-from ui.main_window import MainWindow
-from utils.theme import aplicar_tema
+from aplicacion.controlador import ControladorSimulacion
+from simulacion.motor import MotorSimulacion
+from interfaz.ventana_principal import VentanaPrincipal
+from interfaz.estilos.tema import aplicar_tema
 
 
 def main():
     app = QApplication(sys.argv)
     aplicar_tema(app)
-    ventana = MainWindow()
+    motor = MotorSimulacion()
+    controlador = ControladorSimulacion(motor=motor)
+    ventana = VentanaPrincipal(controlador)
     ventana.show()
     sys.exit(app.exec())
 
