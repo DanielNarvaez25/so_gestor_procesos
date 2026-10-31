@@ -1,31 +1,31 @@
 """Indicadores de estado de la simulación."""
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
-from interfaz.estilos import colores as colors
-from interfaz.formato import ms
+from interfaz.estilos import colores
+from interfaz.formato import formatear_milisegundos
 
-class Summary(QWidget):
+class ResumenSimulacion(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        row = QHBoxLayout(self)
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(10)
+        distribucion_indicadores = QHBoxLayout(self)
+        distribucion_indicadores.setContentsMargins(0, 0, 0, 0)
+        distribucion_indicadores.setSpacing(10)
         self.valores = []
-        for title, color in [("RELOJ SIMULADO", colors.TEXT), ("PREPARADOS", colors.STATE_PREPARADO), ("EN E/S", colors.STATE_SUSPENDIDO), ("TERMINADOS", colors.STATE_TERMINADO)]:
-            card = QFrame()
-            card.setObjectName("Metric")
-            card.setStyleSheet(f"QFrame#Metric {{ border-top: 3px solid {color}; }}")
-            box = QVBoxLayout(card)
-            box.setContentsMargins(18, 12, 18, 12)
-            label = QLabel(title)
-            label.setObjectName("PanelTitle")
-            value = QLabel("0")
-            value.setObjectName("MetricValue")
-            value.setStyleSheet(f"color: {color};")
-            box.addWidget(label)
-            box.addWidget(value)
-            self.valores.append(value)
-            row.addWidget(card, 1)
+        for titulo, color in [("RELOJ SIMULADO", colores.TEXT), ("PREPARADOS", colores.STATE_PREPARADO), ("EN E/S", colores.STATE_SUSPENDIDO), ("TERMINADOS", colores.STATE_TERMINADO)]:
+            tarjeta = QFrame()
+            tarjeta.setObjectName("Metric")
+            tarjeta.setStyleSheet(f"QFrame#Metric {{ border-top: 3px solid {color}; }}")
+            distribucion_tarjeta = QVBoxLayout(tarjeta)
+            distribucion_tarjeta.setContentsMargins(18, 12, 18, 12)
+            etiqueta = QLabel(titulo)
+            etiqueta.setObjectName("PanelTitle")
+            valor = QLabel("0")
+            valor.setObjectName("MetricValue")
+            valor.setStyleSheet(f"color: {color};")
+            distribucion_tarjeta.addWidget(etiqueta)
+            distribucion_tarjeta.addWidget(valor)
+            self.valores.append(valor)
+            distribucion_indicadores.addWidget(tarjeta, 1)
 
-    def actualizar(self, sim):
-        for label, value in zip(self.valores, [ms(sim.reloj), len(sim.preparados), len(sim.suspendidos), len(sim.terminados)]):
-            label.setText(str(value))
+    def actualizar(self, motor):
+        for etiqueta, valor in zip(self.valores, [formatear_milisegundos(motor.reloj), len(motor.preparados), len(motor.suspendidos), len(motor.terminados)]):
+            etiqueta.setText(str(valor))

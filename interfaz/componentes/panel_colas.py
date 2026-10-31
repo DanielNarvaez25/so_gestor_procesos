@@ -3,17 +3,17 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
 from .panel import Panel
-from .tarjeta_proceso import ProcessCard
+from .tarjeta_proceso import TarjetaProceso
 
 
-class QueuePanel(Panel):
+class PanelColas(Panel):
     seleccionado = Signal(int)
 
     def __init__(self, titulo: str, vacio: str = "Sin procesos", conteo: bool = True, parent=None):
         super().__init__(titulo, parent)
         self._base = titulo
         self._conteo = conteo
-        self._tarjetas: dict[int, ProcessCard] = {}
+        self._tarjetas: dict[int, TarjetaProceso] = {}
 
         self._lista = QVBoxLayout()
         self._lista.setContentsMargins(0, 0, 0, 0)
@@ -26,32 +26,35 @@ class QueuePanel(Panel):
 
         contenedor = QWidget()
         contenedor.setLayout(self._lista)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(contenedor)
-        scroll.viewport().setAutoFillBackground(False)
+        area_desplazamiento = QScrollArea()
+        area_desplazamiento.setWidgetResizable(True)
+        area_desplazamiento.setWidget(contenedor)
+        area_desplazamiento.viewport().setAutoFillBackground(False)
         contenedor.setAutoFillBackground(False)
-        self.cuerpo.addWidget(scroll, 1)
+        self.cuerpo.addWidget(area_desplazamiento, 1)
 
     def actualizar(self, procesos, seleccionado: int | None = None):
-        pids = {p.pid for p in procesos}
-        for pid in [k for k in self._tarjetas if k not in pids]:
+        identificadores_actuales = {proceso.pid for proceso in procesos}
+        # Se toma una copia de las claves antes de borrar tarjetas del diccionario.
+        for pid in tuple(self._tarjetas):
+            if pid in identificadores_actuales:
+                continue
             tarjeta = self._tarjetas.pop(pid)
             self._lista.removeWidget(tarjeta)
             tarjeta.hide()
             tarjeta.deleteLater()
 
-        for i, p in enumerate(procesos):
-            tarjeta = self._tarjetas.get(p.pid)
+        for indice_tarjeta, proceso in enumerate(procesos):
+            tarjeta = self._tarjetas.get(proceso.pid)
             if tarjeta is None:
-                tarjeta = ProcessCard(p)
+                tarjeta = TarjetaProceso(proceso)
                 tarjeta.seleccionado.connect(self.seleccionado)
-                self._tarjetas[p.pid] = tarjeta
-            if self._lista.indexOf(tarjeta) != i:
+                self._tarjetas[proceso.pid] = tarjeta
+            if self._lista.indexOf(tarjeta) != indice_tarjeta:
                 self._lista.removeWidget(tarjeta)
-                self._lista.insertWidget(i, tarjeta)
-            tarjeta.actualizar(p)
-            tarjeta.set_seleccionado(p.pid == seleccionado)
+                self._lista.insertWidget(indice_tarjeta, tarjeta)
+            tarjeta.actualizar(proceso)
+            tarjeta.set_seleccionado(proceso.pid == seleccionado)
 
         self._vacio.setVisible(not procesos)
         if self._conteo:

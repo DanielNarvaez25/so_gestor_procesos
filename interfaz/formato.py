@@ -1,27 +1,27 @@
 """Formato de textos (sin Qt): tiempos y HTML de los tooltips."""
 from html import escape
 
-from interfaz.estilos import colores as colors
+from interfaz.estilos import colores
 
 
-def ms(valor: int) -> str:
+def formatear_milisegundos(valor: int) -> str:
     """1500 -> '1.500 ms'"""
     return f"{valor:,} ms".replace(",", ".")
 
 
-def tooltip_proceso(p, seg=None) -> str:
+def tooltip_proceso(proceso, segmento=None) -> str:
     """Info de un proceso para mostrar al pasar el mouse.
-    `seg` (opcional) agrega los datos del segmento del Gantt bajo el cursor."""
-    estado = colors.color_estado(p.estado)
+    `segmento` (opcional) agrega los datos del segmento del Gantt bajo el cursor."""
+    estado = colores.color_estado(proceso.estado)
     filas = [
-        f"<b style='color:{colors.color_pid(p.pid)}'>{escape(p.nombre)}</b> &nbsp;(PID {p.pid})",
-        f"Estado: <b style='color:{estado}'>{p.estado.value}</b>",
-        f"Prioridad: {p.prioridad} &nbsp;·&nbsp; Quantum: {ms(p.quantum)}",
-        f"Ejecutado: {ms(p.tiempo_ejecutado)} / {ms(p.tiempo_total)} ({p.progreso_total}%)",
-        f"Interactividad: {p.interactividad}%",
+        f"<b style='color:{colores.color_pid(proceso.pid)}'>{escape(proceso.nombre)}</b> &nbsp;(PID {proceso.pid})",
+        f"Estado: <b style='color:{estado}'>{proceso.estado.value}</b>",
+        f"Prioridad: {proceso.prioridad} &nbsp;·&nbsp; Quantum: {formatear_milisegundos(proceso.quantum)}",
+        f"Ejecutado: {formatear_milisegundos(proceso.tiempo_ejecutado)} / {formatear_milisegundos(proceso.tiempo_total)} ({proceso.progreso_total}%)",
+        f"Interactividad: {proceso.interactividad}%",
     ]
-    if p.causa_bloqueo and p.estado.name == "SUSPENDIDO":
-        filas.append(f"Bloqueado por: {p.causa_bloqueo} ({ms(p.tiempo_en_bloqueo)} / {ms(p.bloqueo_total)})")
-    if seg is not None:
-        filas.append(f"<br>Turno: {ms(seg.inicio)} → {ms(seg.fin)} (duró {ms(seg.duracion)})")
+    if proceso.causa_bloqueo and proceso.estado.name == "SUSPENDIDO":
+        filas.append(f"Bloqueado por: {proceso.causa_bloqueo} ({formatear_milisegundos(proceso.tiempo_en_bloqueo)} / {formatear_milisegundos(proceso.bloqueo_total)})")
+    if segmento is not None:
+        filas.append(f"<br>Turno: {formatear_milisegundos(segmento.inicio)} → {formatear_milisegundos(segmento.fin)} (duró {formatear_milisegundos(segmento.duracion)})")
     return "<br>".join(filas)

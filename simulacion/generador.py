@@ -1,14 +1,14 @@
 """Datos aleatorios para el botón 'Generar aleatorio'."""
 import random
 
-from simulacion import configuracion as config
+from simulacion import configuracion
 
 
-def datos_aleatorios(rng: random.Random | None = None) -> dict:
-    rng = rng or random
-    t = config.TICK_MS
+def datos_aleatorios(generador_aleatorio: random.Random | None = None) -> dict:
+    generador_aleatorio = generador_aleatorio or random
+    paso_simulacion = configuracion.TICK_MS
     return {
-        "prioridad": rng.randint(config.PRIORIDAD_MIN, config.PRIORIDAD_MAX),
-        "tiempo_total": rng.randrange(config.TIEMPO_TOTAL_RANGO[0], config.TIEMPO_TOTAL_RANGO[1] + 1, t),
-        "interactividad": rng.randint(*config.INTERACTIVIDAD_RANGO),
+        "prioridad": generador_aleatorio.randint(configuracion.PRIORIDAD_MIN, configuracion.PRIORIDAD_MAX),
+        "tiempo_total": generador_aleatorio.randrange(configuracion.TIEMPO_TOTAL_RANGO[0], configuracion.TIEMPO_TOTAL_RANGO[1] + 1, paso_simulacion),
+        "interactividad": generador_aleatorio.randint(*configuracion.INTERACTIVIDAD_RANGO),
     }

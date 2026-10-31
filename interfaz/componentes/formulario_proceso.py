@@ -1,10 +1,10 @@
 """Creación manual y aleatoria de procesos."""
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox, QVBoxLayout
-from simulacion import configuracion as config
+from simulacion import configuracion
 from .panel import Panel
 
-class ProcessForm(Panel):
+class FormularioProceso(Panel):
     enviar = Signal()
     aleatorio = Signal()
 
@@ -15,8 +15,13 @@ class ProcessForm(Panel):
         self._nombre.setMaxLength(60)
         self._nombre.returnPressed.connect(self.enviar)
         self._prioridad = QComboBox()
-        for n in range(config.PRIORIDAD_MIN, config.PRIORIDAD_MAX + 1):
-            self._prioridad.addItem(f"{n}" + (" · Alta" if n == 5 else " · Baja" if n == 1 else ""), n)
+        for prioridad in range(configuracion.PRIORIDAD_MIN, configuracion.PRIORIDAD_MAX + 1):
+            texto_prioridad = str(prioridad)
+            if prioridad == configuracion.PRIORIDAD_MAX:
+                texto_prioridad += " · Alta"
+            elif prioridad == configuracion.PRIORIDAD_MIN:
+                texto_prioridad += " · Baja"
+            self._prioridad.addItem(texto_prioridad, prioridad)
         self._prioridad.setCurrentIndex(self._prioridad.findData(3))
         self._tiempo = QSpinBox()
         self._tiempo.setRange(1, 60000)
@@ -28,16 +33,16 @@ class ProcessForm(Panel):
         self._interactividad.setSuffix(" %")
         self._interactividad.setValue(30)
         self._interactividad.setToolTip("Probabilidad de solicitar E/S en cada turno de CPU")
-        for text, widget in [("Nombre · opcional", self._nombre), ("Prioridad", self._prioridad)]:
-            self.cuerpo.addWidget(QLabel(text))
-            self.cuerpo.addWidget(widget)
-        row = QHBoxLayout()
-        for text, widget in [("Tiempo de CPU", self._tiempo), ("E/S por turno", self._interactividad)]:
-            col = QVBoxLayout()
-            col.addWidget(QLabel(text))
-            col.addWidget(widget)
-            row.addLayout(col)
-        self.cuerpo.addLayout(row)
+        for texto, control in [("Nombre · opcional", self._nombre), ("Prioridad", self._prioridad)]:
+            self.cuerpo.addWidget(QLabel(texto))
+            self.cuerpo.addWidget(control)
+        distribucion_campos_numericos = QHBoxLayout()
+        for texto, control in [("Tiempo de CPU", self._tiempo), ("E/S por turno", self._interactividad)]:
+            distribucion_campo = QVBoxLayout()
+            distribucion_campo.addWidget(QLabel(texto))
+            distribucion_campo.addWidget(control)
+            distribucion_campos_numericos.addLayout(distribucion_campo)
+        self.cuerpo.addLayout(distribucion_campos_numericos)
         self.agregar = QPushButton("+  Agregar proceso")
         self.agregar.setObjectName("Primary")
         self.agregar.clicked.connect(self.enviar)
@@ -53,7 +58,12 @@ class ProcessForm(Panel):
         return self._prioridad.currentData()
 
     def datos(self):
-        return dict(nombre=self.nombre(), prioridad=self.prioridad(), tiempo_total=self._tiempo.value(), interactividad=self._interactividad.value())
+        return {
+            "nombre": self.nombre(),
+            "prioridad": self.prioridad(),
+            "tiempo_total": self._tiempo.value(),
+            "interactividad": self._interactividad.value(),
+        }
 
     def limpiar(self):
         self._nombre.clear()

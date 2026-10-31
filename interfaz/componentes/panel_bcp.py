@@ -6,35 +6,35 @@ from .bcp_campos import Campo
 from .panel import Panel
 
 
-class BcpPanel(Panel):
+class PanelBcp(Panel):
     def __init__(self, titulo: str, campos: list[Campo], columnas: int = 1, parent=None):
         super().__init__(titulo, parent)
         self._campos = campos
         self._valores: list[QLabel] = []
-        grid = QGridLayout()
-        grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(6)
-        for i, campo in enumerate(campos):
-            fila, col = divmod(i, columnas)
+        cuadricula = QGridLayout()
+        cuadricula.setHorizontalSpacing(10)
+        cuadricula.setVerticalSpacing(6)
+        for indice_campo, campo in enumerate(campos):
+            fila, columna = divmod(indice_campo, columnas)
             etiqueta = QLabel(campo.etiqueta)
             etiqueta.setObjectName("Muted")
             valor = QLabel("—")
             valor.setTextFormat(Qt.PlainText)
             valor.setMinimumWidth(0)
             valor.setWordWrap(True)
-            grid.addWidget(etiqueta, fila, col * 2)
-            grid.addWidget(valor, fila, col * 2 + 1)
+            cuadricula.addWidget(etiqueta, fila, columna * 2)
+            cuadricula.addWidget(valor, fila, columna * 2 + 1)
             self._valores.append(valor)
-        for c in range(columnas):
-            grid.setColumnStretch(c * 2 + 1, 1)
-        self.cuerpo.addLayout(grid)
+        for indice_columna in range(columnas):
+            cuadricula.setColumnStretch(indice_columna * 2 + 1, 1)
+        self.cuerpo.addLayout(cuadricula)
         self.cuerpo.addStretch()
 
-    def actualizar(self, p):
-        for campo, label in zip(self._campos, self._valores):
-            if p is None:
-                label.setText("—")
-                label.setStyleSheet("")
+    def actualizar(self, proceso):
+        for campo, etiqueta_valor in zip(self._campos, self._valores):
+            if proceso is None:
+                etiqueta_valor.setText("—")
+                etiqueta_valor.setStyleSheet("")
                 continue
-            label.setText(campo.valor(p))
-            label.setStyleSheet(f"color: {campo.color(p)}; font-weight: 600;" if campo.color else "")
+            etiqueta_valor.setText(campo.valor(proceso))
+            etiqueta_valor.setStyleSheet(f"color: {campo.color(proceso)}; font-weight: 600;" if campo.color else "")

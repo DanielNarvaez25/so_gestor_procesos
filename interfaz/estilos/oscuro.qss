@@ -14,12 +14,28 @@ QLabel#Brand { background: {{ACCENT}}; color: {{TEXT_ON_ACCENT}}; border-radius:
 QLabel#State { color: {{ACCENT}}; background: {{BG_PANEL_ALT}}; border: 1px solid {{BORDER}}; border-radius: 12px; padding: 7px 14px; font-weight: 600; }
 QLabel#Badge { color: {{TEXT_ON_ACCENT}}; font-weight: 700; font-size: 16px; border-radius: 10px; }
 QPushButton { background: {{BG_PANEL_ALT}}; border: 1px solid {{BORDER}}; border-radius: 7px; padding: 8px 13px; font-weight: 600; }
-QPushButton:hover { background: {{BG_HOVER}}; border-color: {{TEXT_MUTED}}; }
-QPushButton:pressed { border-color: {{ACCENT}}; }
+QPushButton:hover:enabled { background: {{BG_HOVER}}; border-color: {{ACCENT}}; }
+QPushButton:checked { background: {{BG_HOVER}}; color: {{ACCENT}}; border-color: {{ACCENT}}; }
+QPushButton:checked:hover:enabled { background: {{BORDER}}; }
+QPushButton:pressed:enabled { background: {{BG_INPUT}}; border-color: {{ACCENT}}; padding-top: 9px; padding-bottom: 7px; }
 QPushButton#Primary { background: {{ACCENT}}; color: {{TEXT_ON_ACCENT}}; border-color: {{ACCENT}}; }
-QPushButton#Primary:hover { background: {{ACCENT_HOVER}}; }
-QPushButton:disabled { color: {{TEXT_MUTED}}; background: {{BG_INPUT}}; }
-QPushButton#Danger:hover { color: {{DANGER}}; border-color: {{DANGER}}; }
+QPushButton#Primary:hover:enabled { background: {{ACCENT_HOVER}}; border-color: {{ACCENT_HOVER}}; }
+QPushButton#Primary:pressed:enabled { background: {{ACCENT_PRESSED}}; border-color: {{ACCENT_PRESSED}}; }
+QPushButton#Danger:hover:enabled { color: {{DANGER}}; border-color: {{DANGER}}; }
+QPushButton#Danger:pressed:enabled { background: {{DANGER}}; color: {{TEXT_ON_ACCENT}}; border-color: {{DANGER}}; }
+QPushButton:disabled, QPushButton#Primary:disabled, QPushButton#Danger:disabled {
+    color: {{TEXT_MUTED}};
+    background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 {{BG_HOVER}},stop:1 {{BG_PANEL_ALT}});
+    border-color: {{BORDER}};
+    border-top-color: {{DISABLED_EDGE}};
+    border-bottom-color: {{BG_INPUT}};
+}
+QPushButton:disabled[cursorEncima="true"], QPushButton#Primary:disabled[cursorEncima="true"], QPushButton#Danger:disabled[cursorEncima="true"] {
+    background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 {{BORDER}},stop:1 {{BG_HOVER}});
+    border-color: {{DISABLED_EDGE}};
+    border-top-color: {{TEXT_MUTED}};
+    border-bottom-color: {{BORDER}};
+}
 QLineEdit, QComboBox, QSpinBox { background: {{BG_INPUT}}; border: 1px solid {{BORDER}}; border-radius: 6px; padding: 7px 8px; selection-background-color: {{BG_HOVER}}; }
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus { border-color: {{ACCENT}}; }
 QComboBox QAbstractItemView { background: {{BG_PANEL}}; selection-background-color: {{BG_HOVER}}; border: 1px solid {{BORDER}}; }
@@ -37,11 +53,6 @@ QTabWidget::pane { background: {{BG_PANEL}}; border: 1px solid {{BORDER}}; borde
 QTabBar::tab { color: {{TEXT_MUTED}}; padding: 10px 12px; border-bottom: 2px solid transparent; }
 QTabBar::tab:selected { color: {{ACCENT}}; border-bottom-color: {{ACCENT}}; }
 QTabBar::tab:hover { color: {{TEXT}}; }
-QTableWidget { background: {{BG_PANEL}}; alternate-background-color: {{BG_PANEL_ALT}}; border: none; gridline-color: {{BORDER}}; }
-QTableWidget::item { padding: 5px 8px; border-bottom: 1px solid {{BORDER}}; }
-QTableWidget::item:selected { background: {{BG_HOVER}}; color: {{TEXT}}; }
-QHeaderView::section { background: {{BG_PANEL}}; color: {{TEXT_MUTED}}; border: none; border-bottom: 1px solid {{BORDER}}; padding: 8px; font-size: 11px; font-weight: 600; }
-QPlainTextEdit { background: {{BG_PANEL}}; color: {{TEXT_MUTED}}; border: none; padding: 8px; font-family: "Cascadia Code", "Consolas"; font-size: 11px; }
 QToolTip { background: {{TOOLTIP_BG}}; color: {{TOOLTIP_TEXT}}; border: 1px solid {{BORDER}}; padding: 8px; }
 QSplitter::handle { background: {{BG_APP}}; }
 QSplitter::handle:hover { background: {{BORDER}}; }
@@ -53,7 +64,6 @@ QFrame#Toolbar { background: {{BG_PANEL_ALT}}; border-radius: 14px; }
 QFrame#Panel { border-radius: 14px; }
 QLabel#PanelTitle { color: {{TEXT}}; padding-bottom: 4px; }
 QPushButton { min-height: 18px; }
-QPushButton:checked { background: {{BG_HOVER}}; border-color: {{ACCENT}}; }
 QPushButton:focus, QComboBox:focus { border: 1px solid {{ACCENT}}; }
 QCheckBox { spacing: 7px; color: {{TEXT_MUTED}}; }
 QCheckBox::indicator { width: 15px; height: 15px; border: 1px solid {{BORDER}}; border-radius: 4px; background: {{BG_INPUT}}; }

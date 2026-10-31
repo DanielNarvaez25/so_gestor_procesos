@@ -24,16 +24,16 @@ class ControladorSimulacion(QObject):
 
     def conectar_vista(self, vista):
         self.vista = vista
-        t = vista.toolbar
-        t.alternar_form.connect(lambda: vista.sidebar.setVisible(t.formulario_visible()))
-        t.iniciar.connect(self.iniciar)
-        t.pausar.connect(self.pausar)
-        t.paso.connect(self.paso)
-        t.reiniciar.connect(self.reiniciar)
-        t.rata_cambiada.connect(self.set_rata)
-        t.velocidad_cambiada.connect(self.set_velocidad)
-        vista.form.enviar.connect(self.agregar_desde_formulario)
-        vista.form.aleatorio.connect(self.agregar_aleatorio)
+        barra_controles = vista.barra_controles
+        barra_controles.alternar_panel_lateral.connect(self._actualizar_visibilidad_panel_lateral)
+        barra_controles.iniciar.connect(self.iniciar)
+        barra_controles.pausar.connect(self.pausar)
+        barra_controles.paso.connect(self.paso)
+        barra_controles.reiniciar.connect(self.reiniciar)
+        barra_controles.divisor_quantum_cambiado.connect(self.cambiar_divisor_quantum)
+        barra_controles.velocidad_cambiada.connect(self.set_velocidad)
+        vista.formulario.enviar.connect(self.agregar_desde_formulario)
+        vista.formulario.aleatorio.connect(self.agregar_aleatorio)
         for panel in (vista.preparados, vista.suspendidos, vista.terminados):
             panel.seleccionado.connect(self.seleccionar)
         self.cambio.connect(self.refrescar)
@@ -41,11 +41,16 @@ class ControladorSimulacion(QObject):
         self.reiniciado.connect(vista.limpiar_eventos)
         self.refrescar()
 
+    def _actualizar_visibilidad_panel_lateral(self):
+        panel_visible = self.vista.barra_controles.formulario_visible()
+        self.vista.panel_lateral.setVisible(panel_visible)
+
     def refrescar(self):
         if self.vista is not None:
             self.vista.mostrar(self.motor, self.seleccion, self.corriendo)
 
-    def _publicar(self):
+    def _publicar_eventos_y_estado(self):
+        """Entrega los mensajes pendientes y solicita actualizar la pantalla."""
         for mensaje in self.motor.extraer_eventos():
             self.evento.emit(mensaje)
         self.segmento.emit(self.motor.linea.abierto)
@@ -64,18 +69,18 @@ class ControladorSimulacion(QObject):
         self.motor.paso()
         if not self.motor.hay_trabajo:
             self.temporizador.stop()
-        self._publicar()
+        self._publicar_eventos_y_estado()
 
     def reiniciar(self):
         self.temporizador.stop()
         self.motor.reiniciar()
         self.seleccion = None
         self.reiniciado.emit()
-        self._publicar()
+        self._publicar_eventos_y_estado()
 
-    def set_rata(self, rata):
-        self.motor.set_rata(rata)
-        self._publicar()
+    def cambiar_divisor_quantum(self, divisor_quantum):
+        self.motor.cambiar_divisor_quantum(divisor_quantum)
+        self._publicar_eventos_y_estado()
 
     def set_velocidad(self, intervalo_ms):
         if intervalo_ms <= 0:
@@ -84,19 +89,19 @@ class ControladorSimulacion(QObject):
 
     def agregar_proceso(self, **datos):
         proceso = self.motor.agregar_proceso(**datos)
-        self._publicar()
+        self._publicar_eventos_y_estado()
         return proceso
 
     def agregar_desde_formulario(self):
-        proceso = self.agregar_proceso(**self.vista.form.datos())
+        proceso = self.agregar_proceso(**self.vista.formulario.datos())
         self.seleccionar(proceso.pid)
-        self.vista.form.limpiar()
+        self.vista.formulario.limpiar()
 
     def agregar_aleatorio(self):
-        proceso = self.motor.agregar_aleatorio(self.vista.form.nombre())
-        self._publicar()
+        proceso = self.motor.agregar_aleatorio(self.vista.formulario.nombre())
+        self._publicar_eventos_y_estado()
         self.seleccionar(proceso.pid)
-        self.vista.form.limpiar()
+        self.vista.formulario.limpiar()
 
     def seleccionar(self, pid):
         self.seleccion = pid

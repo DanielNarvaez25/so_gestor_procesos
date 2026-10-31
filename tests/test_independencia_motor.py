@@ -10,17 +10,17 @@ class IndependenciaTests(unittest.TestCase):
         programa = '''
 import sys
 from simulacion.motor import MotorSimulacion
-a, b = MotorSimulacion(seed=42), MotorSimulacion(seed=42)
+primer_motor, segundo_motor = MotorSimulacion(seed=42), MotorSimulacion(seed=42)
 for _ in range(5):
-    assert a.agregar_aleatorio() == b.agregar_aleatorio()
-while a.hay_trabajo:
-    a.paso()
-while b.hay_trabajo:
-    b.paso()
-assert a.reloj == b.reloj
-assert a.linea.segmentos == b.linea.segmentos
-assert a.extraer_eventos() == b.extraer_eventos()
-assert not any(n.startswith(('PySide6', 'interfaz', 'aplicacion')) for n in sys.modules)
+    assert primer_motor.agregar_aleatorio() == segundo_motor.agregar_aleatorio()
+while primer_motor.hay_trabajo:
+    primer_motor.paso()
+while segundo_motor.hay_trabajo:
+    segundo_motor.paso()
+assert primer_motor.reloj == segundo_motor.reloj
+assert primer_motor.linea.segmentos == segundo_motor.linea.segmentos
+assert primer_motor.extraer_eventos() == segundo_motor.extraer_eventos()
+assert not any(nombre_modulo.startswith(('PySide6', 'interfaz', 'aplicacion')) for nombre_modulo in sys.modules)
 '''
         resultado = subprocess.run(
             [sys.executable, '-c', programa], cwd=Path(__file__).resolve().parents[1],

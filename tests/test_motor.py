@@ -2,112 +2,121 @@
 import unittest
 from simulacion.motor import MotorSimulacion
 from simulacion.estados import Estado
-from simulacion import planificador as scheduler
+from simulacion import planificador
 
 
 class SimulationTests(unittest.TestCase):
     def setUp(self):
-        self.sim = MotorSimulacion(seed=7)
+        self.motor = MotorSimulacion(seed=7)
 
 
-    def add(self, total=100, priority=3, io=0):
-        return self.sim.agregar_proceso(prioridad=priority, tiempo_total=total, interactividad=io)
+    def crear_proceso(self, tiempo_total=100, prioridad=3, interactividad=0):
+        return self.motor.agregar_proceso(prioridad=prioridad, tiempo_total=tiempo_total, interactividad=interactividad)
 
     def test_exact_completion_and_gantt(self):
-        p = self.add(15)
-        self.sim.paso()
-        self.sim.paso()
-        self.assertEqual((p.tiempo_ejecutado, self.sim.reloj), (15, 15))
-        self.assertEqual(sum(s.duracion for s in self.sim.linea.segmentos), 15)
-        self.assertEqual(p.estado, Estado.TERMINADO)
-        self.assertIsNone(self.sim.linea.abierto)
+        proceso = self.crear_proceso(15)
+        self.motor.paso()
+        self.motor.paso()
+        self.assertEqual((proceso.tiempo_ejecutado, self.motor.reloj), (15, 15))
+        self.assertEqual(sum(segmento.duracion for segmento in self.motor.linea.segmentos), 15)
+        self.assertEqual(proceso.estado, Estado.TERMINADO)
+        self.assertIsNone(self.motor.linea.abierto)
 
     def test_remainder_of_tick_is_used_by_next_process(self):
-        a, b = self.add(3), self.add(12)
-        self.sim.paso()
-        self.assertEqual((a.tiempo_ejecutado, b.tiempo_ejecutado, b.tiempo_espera), (3, 7, 3))
-        self.sim.paso()
-        self.assertEqual((self.sim.reloj, b.tiempo_ejecutado), (15, 12))
+        primer_proceso, segundo_proceso = self.crear_proceso(3), self.crear_proceso(12)
+        self.motor.paso()
+        self.assertEqual((primer_proceso.tiempo_ejecutado, segundo_proceso.tiempo_ejecutado, segundo_proceso.tiempo_espera), (3, 7, 3))
+        self.motor.paso()
+        self.assertEqual((self.motor.reloj, segundo_proceso.tiempo_ejecutado), (15, 12))
 
     def test_scheduler_priority_quantum_and_fifo(self):
-        first = self.add(100, 1)
-        a = self.add(100, 5)
-        b = self.add(200, 5)
-        c = self.add(200, 5)
-        self.assertIs(scheduler.elegir(self.sim.preparados), b)
-        for _ in range(2): self.sim.paso()
-        self.assertIs(self.sim.en_cpu, b)
-        self.assertEqual(sorted([a, b, c, first], key=scheduler.clave_orden), [b, c, a, first])
+        proceso_inicial = self.crear_proceso(100, 1)
+        primer_proceso = self.crear_proceso(100, 5)
+        segundo_proceso = self.crear_proceso(200, 5)
+        tercer_proceso = self.crear_proceso(200, 5)
+        self.assertIs(planificador.seleccionar_siguiente_proceso(self.motor.preparados), segundo_proceso)
+        for _ in range(2):
+            self.motor.paso()
+        self.assertIs(self.motor.en_cpu, segundo_proceso)
+        self.assertEqual(sorted([primer_proceso, segundo_proceso, tercer_proceso, proceso_inicial], key=planificador.clave_orden), [segundo_proceso, tercer_proceso, primer_proceso, proceso_inicial])
 
     def test_rate_change_preserves_current_turn_and_io(self):
-        p = self.add(1000, io=100)
-        self.sim.paso()
-        previous = p.quantum, p.bloqueo_en, p.quantum_usado
-        queued = self.add(500)
-        self.sim.set_rata(10)
-        self.assertEqual((p.quantum, p.bloqueo_en, p.quantum_usado), previous)
-        self.assertEqual(queued.quantum, 50)
+        proceso = self.crear_proceso(1000, interactividad=100)
+        self.motor.paso()
+        turno_anterior = proceso.quantum, proceso.bloqueo_en, proceso.quantum_usado
+        proceso_en_cola = self.crear_proceso(500)
+        self.motor.cambiar_divisor_quantum(10)
+        self.assertEqual((proceso.quantum, proceso.bloqueo_en, proceso.quantum_usado), turno_anterior)
+        self.assertEqual(proceso_en_cola.quantum, 50)
         for _ in range(2000):
-            self.sim.paso()
-            if self.sim.en_cpu is p and p.quantum == 100:
+            self.motor.paso()
+            if self.motor.en_cpu is proceso and proceso.quantum == 100:
                 break
         else:
             self.fail("El próximo turno no adoptó la nueva rata")
 
     def test_new_rate_is_used_before_requeue_ordering(self):
-        p = self.add(100)
-        p.quantum_usado = p.quantum - 10
-        self.sim.set_rata(10)
-        self.sim.paso()
-        self.assertEqual(p.quantum, 10)
+        proceso = self.crear_proceso(100)
+        proceso.quantum_usado = proceso.quantum - 10
+        self.motor.cambiar_divisor_quantum(10)
+        self.motor.paso()
+        self.assertEqual(proceso.quantum, 10)
 
     def test_io_release_does_not_add_an_extra_tick_of_wait(self):
-        p = self.add(100)
-        p.bloqueo_en = 3
-        self.sim._multiplo = lambda *_: 7
-        self.sim.paso()
-        self.assertEqual(self.sim.reloj, 10)
-        self.assertEqual(p.tiempo_ejecutado, 3)
-        self.assertEqual(p.tiempo_espera, 0)
-        self.assertIs(self.sim.en_cpu, p)
-        self.assertEqual(p.bloqueo_restante, 0)
+        proceso = self.crear_proceso(100)
+        proceso.bloqueo_en = 3
+        self.motor._sortear_duracion_en_milisegundos = lambda *_: 7
+        self.motor.paso()
+        self.assertEqual(self.motor.reloj, 10)
+        self.assertEqual(proceso.tiempo_ejecutado, 3)
+        self.assertEqual(proceso.tiempo_espera, 0)
+        self.assertIs(self.motor.en_cpu, proceso)
+        self.assertEqual(proceso.bloqueo_restante, 0)
 
     def test_completion_and_reset_clear_state(self):
-        self.add(3)
-        self.sim.paso()
-        self.sim.reiniciar()
-        self.assertEqual(self.sim.reloj, 0)
-        self.assertFalse(self.sim.procesos)
-        self.assertFalse(self.sim.linea.segmentos)
-        self.assertIsNone(self.sim.en_cpu)
+        self.crear_proceso(3)
+        self.motor.paso()
+        self.motor.reiniciar()
+        self.assertEqual(self.motor.reloj, 0)
+        self.assertFalse(self.motor.procesos)
+        self.assertFalse(self.motor.linea.segmentos)
+        self.assertIsNone(self.motor.en_cpu)
 
     def test_invalid_inputs_are_rejected_without_creating_a_process(self):
-        for total in [0, -1, 1.5, True]:
-            with self.assertRaises(ValueError): self.add(total)
-        for io in [-1, 101]:
-            with self.assertRaises(ValueError): self.add(io=io)
-        with self.assertRaises(ValueError): self.sim.set_rata(0)
-        self.assertFalse(self.sim.procesos)
-        self.assertEqual(self.add().pid, 101)
+        for tiempo_total in [0, -1, 1.5, True]:
+            with self.assertRaises(ValueError):
+                self.crear_proceso(tiempo_total)
+        for interactividad in [-1, 101]:
+            with self.assertRaises(ValueError):
+                self.crear_proceso(interactividad=interactividad)
+        with self.assertRaises(ValueError):
+            self.motor.cambiar_divisor_quantum(0)
+        self.assertFalse(self.motor.procesos)
+        self.assertEqual(self.crear_proceso().pid, 101)
 
     def test_many_seeded_runs_preserve_process_and_timeline_invariants(self):
         for seed in range(20):
-            sim = MotorSimulacion(seed=seed)
-            for n in range(8):
-                sim.agregar_proceso(prioridad=1 + n % 5, tiempo_total=3 + n * 37, interactividad=n * 14)
-            for step in range(3000):
-                if step in (5, 15, 40): sim.set_rata([2, 10, 3][(5, 15, 40).index(step)])
-                sim.paso()
-                states = sim.preparados + sim.suspendidos + sim.terminados + ([sim.en_cpu] if sim.en_cpu else [])
-                self.assertEqual(len({p.pid for p in states}), 8)
-                self.assertEqual(len(states), 8)
-                for p in sim.procesos.values():
-                    self.assertLessEqual(p.tiempo_ejecutado, p.tiempo_total)
-                    self.assertGreaterEqual(p.bloqueo_restante, 0)
-                if len(sim.terminados) == 8: break
-            self.assertEqual(len(sim.terminados), 8)
-            for p in sim.terminados:
-                self.assertEqual(sum(s.duracion for s in sim.linea.segmentos if s.pid == p.pid), p.tiempo_total)
-            for a, b in zip(sim.linea.segmentos, sim.linea.segmentos[1:]):
-                self.assertLessEqual(a.fin, b.inicio)
+            motor = MotorSimulacion(seed=seed)
+            for numero_proceso in range(8):
+                motor.agregar_proceso(prioridad=1 + numero_proceso % 5, tiempo_total=3 + numero_proceso * 37, interactividad=numero_proceso * 14)
+            for numero_paso in range(3000):
+                cambios_divisor = {5: 2, 15: 10, 40: 3}
+                if numero_paso in cambios_divisor:
+                    motor.cambiar_divisor_quantum(cambios_divisor[numero_paso])
+                motor.paso()
+                procesos_por_estado = [*motor.preparados, *motor.suspendidos, *motor.terminados]
+                if motor.en_cpu is not None:
+                    procesos_por_estado.append(motor.en_cpu)
+                self.assertEqual(len({proceso.pid for proceso in procesos_por_estado}), 8)
+                self.assertEqual(len(procesos_por_estado), 8)
+                for proceso in motor.procesos.values():
+                    self.assertLessEqual(proceso.tiempo_ejecutado, proceso.tiempo_total)
+                    self.assertGreaterEqual(proceso.bloqueo_restante, 0)
+                if len(motor.terminados) == 8:
+                    break
+            self.assertEqual(len(motor.terminados), 8)
+            for proceso in motor.terminados:
+                self.assertEqual(sum(segmento.duracion for segmento in motor.linea.segmentos if segmento.pid == proceso.pid), proceso.tiempo_total)
+            for primer_proceso, segundo_proceso in zip(motor.linea.segmentos, motor.linea.segmentos[1:]):
+                self.assertLessEqual(primer_proceso.fin, segundo_proceso.inicio)
 

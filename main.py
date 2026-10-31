@@ -9,13 +9,13 @@ from interfaz.estilos.tema import aplicar_tema
 
 
 def main():
-    app = QApplication(sys.argv)
-    aplicar_tema(app)
+    aplicacion = QApplication(sys.argv)
+    aplicar_tema(aplicacion)
     motor = MotorSimulacion()
     controlador = ControladorSimulacion(motor=motor)
     ventana = VentanaPrincipal(controlador)
     ventana.show()
-    sys.exit(app.exec())
+    sys.exit(aplicacion.exec())
 
 
 if __name__ == "__main__":

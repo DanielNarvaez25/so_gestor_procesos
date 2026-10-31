@@ -21,6 +21,37 @@ Botón Paso → ControladorSimulacion.paso() → MotorSimulacion.paso()
 El temporizador llama a la misma acción que el botón Paso. Su intervalo controla
 la velocidad de reproducción; el motor controla exclusivamente el tiempo virtual.
 
+## Guía de lectura y nombres del código
+
+Para estudiar el proyecto, sigue este orden:
+
+1. `estructuras/lista_enlazada.py`: `Nodo` guarda el dato y el enlace;
+   `ListaEnlazada` permite agregar, eliminar y recorrer los procesos.
+2. `simulacion/proceso.py`: datos de cada proceso y cálculo de sus porcentajes.
+3. `simulacion/planificador.py`: cálculo del quantum y criterios de selección.
+4. `simulacion/motor.py`: `paso()` coordina el avance del reloj y los movimientos
+   entre preparados, CPU, suspendidos y terminados.
+5. `aplicacion/controlador.py`: conecta los botones con el motor y publica
+   eventos y cambios para que se actualice la pantalla.
+6. `interfaz/ventana_principal.py`: crea la cabecera, el panel lateral y el panel
+   de ejecución mediante funciones separadas.
+7. `interfaz/componentes/`: `BarraControles`, `FormularioProceso`, `PanelColas`,
+   `TarjetaProceso`, `PanelCpu`, `PanelBcp`, `ResumenSimulacion` e `HistorialCpu`.
+   El historial dibuja por separado filas, eje, identificadores y segmentos.
+
+Los nombres expresan qué representa cada dato: `proceso_candidato`,
+`tiempo_transcurrido`, `divisor_quantum`, `barra_controles` o `indice_tarjeta`.
+`cambiar_divisor_quantum()` modifica el divisor usado para calcular los turnos.
+`formatear_milisegundos()` convierte un número en texto como `1.500 ms`.
+
+Se mantienen las siglas propias del tema: PID (identificador de proceso),
+CPU (procesador), BCP (bloque de control de proceso), E/S (entrada/salida) y
+ms (milisegundos). `seed` es la semilla usada para repetir escenarios aleatorios.
+En Qt, `parent` indica el componente padre; métodos como `paintEvent()` y
+`mouseMoveEvent()` conservan sus nombres porque Qt los llama automáticamente.
+`self` representa el objeto actual y `_` indica un dato que no necesitamos usar.
+Los nombres de estilo como `Primary` identifican reglas del archivo QSS.
+
 ## Dónde cambiar cada cosa
 
 | Quiero cambiar… | Archivo |
@@ -31,7 +62,7 @@ la velocidad de reproducción; el motor controla exclusivamente el tiempo virtua
 | Tarjetas y colas | `interfaz/componentes/tarjeta_proceso.py`, `panel_colas.py` |
 | Información de CPU | `interfaz/componentes/panel_cpu.py` |
 | Campos del BCP | `interfaz/componentes/bcp_campos.py` |
-| Tablas y detalle BCP | `interfaz/componentes/tabla_bcp.py`, `panel_bcp.py` |
+| Detalle BCP del proceso en CPU | `interfaz/componentes/panel_bcp.py` |
 | Dibujo y ventana temporal del Gantt | `interfaz/componentes/grafico_gantt.py` |
 | Indicadores superiores | `interfaz/componentes/resumen.py` |
 | Colores | `interfaz/estilos/colores.py` |
@@ -39,6 +70,7 @@ la velocidad de reproducción; el motor controla exclusivamente el tiempo virtua
 | Textos de tiempo y tooltips | `interfaz/formato.py` |
 | Acciones, selección y actualización de la ventana | `aplicacion/controlador.py` |
 | Temporizador y velocidad base | `aplicacion/temporizador.py` |
+| Lista simplemente enlazada y nodos | `estructuras/lista_enlazada.py` |
 | Avance del tiempo, colas y transiciones | `simulacion/motor.py` |
 | Selección del próximo proceso y cálculo del quantum | `simulacion/planificador.py` |
 | Datos del proceso | `simulacion/proceso.py` |
@@ -46,6 +78,40 @@ la velocidad de reproducción; el motor controla exclusivamente el tiempo virtua
 | Registro de intervalos de CPU | `simulacion/linea_tiempo.py` |
 | Prioridades, rangos y paso simulado | `simulacion/configuracion.py` |
 | Generación aleatoria | `simulacion/generador.py` |
+
+## Estructura de datos: lista simplemente enlazada
+
+La carpeta `estructuras/` contiene nuestra implementación independiente de Qt:
+
+- `Nodo` guarda `dato` y un enlace `siguiente`. No tiene enlace al anterior.
+- `ListaEnlazada` conserva referencias al primer y último nodo y la cantidad.
+- `agregar(dato)` inserta al final en O(1).
+- `eliminar(dato)` recorre los nodos y elimina la primera coincidencia en O(n).
+  Si el dato no existe, lanza `ValueError`.
+- `limpiar()` vacía la estructura. `len(lista)`, `if lista` y `for dato in lista`
+  permiten consultar su tamaño, comprobar si tiene datos y recorrerla.
+
+```text
+primero → [Proceso A | siguiente] → [Proceso B | siguiente] → None
+                                              ↑
+                                            ultimo
+```
+
+`MotorSimulacion` usa `ListaEnlazada[Proceso]` para `preparados`, `suspendidos`
+y `terminados`, reemplazando las listas de Python anteriores. Los nodos guardan
+referencias a los mismos procesos; al cambiar de estado, el motor elimina el
+proceso de una colección y lo agrega a la siguiente.
+
+El planificador recorre los preparados para seleccionar por prioridad más alta,
+quantum más grande y orden de llegada. Esta selección sigue siendo O(n).
+`preparados_ordenados()` crea una lista temporal ordenada para mostrar las tarjetas;
+no sustituye la lista enlazada que almacena los preparados en el motor.
+
+Se conserva el diccionario `procesos` para buscar por PID, así como las listas de
+mensajes y segmentos del historial, que cumplen funciones diferentes.
+Al recorrer una lista enlazada se puede eliminar el dato que acaba de entregarse,
+como al devolver procesos de E/S a preparados. No se deben eliminar otros nodos
+ni agregar datos a esa misma colección durante el recorrido.
 
 ## Reglas para mantener la separación
 
@@ -81,6 +147,39 @@ La generación aleatoria del formulario utiliza ahora la misma fuente con semill
 que el motor. La misma semilla y secuencia de acciones reproducen el escenario.
 Reiniciar limpia los procesos y el reloj, conserva rata y velocidad y continúa
 la secuencia aleatoria; no vuelve a sembrar el generador.
+
+## Cómo leer y explicar el algoritmo PMA-QMG-P
+
+Empieza por `simulacion/planificador.py`:
+
+1. `calcular_quantum()` divide el tiempo total del proceso entre el divisor
+   configurado y redondea a múltiplos del paso de simulación.
+2. `clave_orden()` expresa las reglas: mayor prioridad, mayor quantum y llegada
+   más antigua. Se compara cada criterio solo cuando empata el anterior.
+3. `seleccionar_siguiente_proceso()` recorre los preparados de la lista enlazada
+   y conserva el mejor candidato. No mueve procesos ni modifica sus estados.
+4. `explicar_seleccion()` genera el motivo que se registra al entrar a CPU.
+
+Ejemplo: A tiene prioridad 3 y quantum 200; B tiene prioridad 5 y quantum 100;
+C tiene prioridad 5 y quantum 200. Gana C: supera a A por prioridad y a B por
+quantum. Si otro proceso empata con C en ambos valores, gana el que llegó antes
+a preparados. Cada regreso a preparados recibe un nuevo número de llegada.
+
+Después lee `paso()` en `simulacion/motor.py`. El motor aplica la selección y
+administra el tiempo y los cambios de estado:
+
+1. Si la CPU está libre, asigna el siguiente proceso.
+2. Calcula el tiempo hasta el evento más cercano, sin sobrepasar el fin del paso.
+3. Actualiza el reloj, la ejecución, la espera y los bloqueos de E/S.
+4. Devuelve a preparados los procesos cuya E/S acaba de finalizar.
+5. Comprueba si el proceso en CPU terminó, pidió E/S o agotó su quantum, en ese
+   orden. Si nada de eso ocurre, continúa ejecutándose.
+6. Si quedó libre la CPU, selecciona otro proceso y aprovecha el tiempo sobrante.
+
+Los métodos de movimientos entre estados están al final de `motor.py`, con
+nombres como `_asignar_cpu_al_siguiente_proceso()` y
+`_devolver_por_quantum_agotado()`. La llegada de un proceso más prioritario no
+interrumpe al proceso actual: la selección ocurre cuando la CPU queda libre.
 
 ## Reglas temporales conservadas
 

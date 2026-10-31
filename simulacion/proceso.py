@@ -35,11 +35,17 @@ class Proceso:
 
     @property
     def progreso_quantum(self) -> int:
-        return min(100, round(100 * self.quantum_usado / self.quantum)) if self.quantum else 0
+        if self.quantum == 0:
+            return 0
+        porcentaje_usado = round(100 * self.quantum_usado / self.quantum)
+        return min(100, porcentaje_usado)
 
     @property
     def progreso_total(self) -> int:
-        return min(100, round(100 * self.tiempo_ejecutado / self.tiempo_total)) if self.tiempo_total else 0
+        if self.tiempo_total == 0:
+            return 0
+        porcentaje_ejecutado = round(100 * self.tiempo_ejecutado / self.tiempo_total)
+        return min(100, porcentaje_ejecutado)
 
     @property
     def tiempo_en_bloqueo(self) -> int:

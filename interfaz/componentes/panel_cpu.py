@@ -2,22 +2,22 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QProgressBar, QVBoxLayout
 
-from interfaz.estilos import colores as colors
+from interfaz.estilos import colores
 
 from .panel import Panel
-from .etiqueta_elidida import ElidedLabel
+from .etiqueta_elidida import EtiquetaElidida
 
 
-class CpuPanel(Panel):
+class PanelCpu(Panel):
     def __init__(self, parent=None):
         super().__init__("CPU / EJECUCIÓN ACTUAL", parent)
-        self._badge = QLabel("–")
-        self._badge.setObjectName("Badge")
-        self._badge.setFixedSize(72, 72)
-        self._badge.setAlignment(Qt.AlignCenter)
-        self._badge.setStyleSheet(f"QLabel#Badge {{ background: {colors.BORDER}; font-size: 28px; }}")
+        self._etiqueta_identificador = QLabel("–")
+        self._etiqueta_identificador.setObjectName("Badge")
+        self._etiqueta_identificador.setFixedSize(72, 72)
+        self._etiqueta_identificador.setAlignment(Qt.AlignCenter)
+        self._etiqueta_identificador.setStyleSheet(f"QLabel#Badge {{ background: {colores.BORDER}; font-size: 28px; }}")
 
-        self._nombre = ElidedLabel("CPU libre")
+        self._nombre = EtiquetaElidida("CPU libre")
         self._nombre.setObjectName("Big")
         self._detalle = QLabel("Sin proceso en ejecución")
         self._detalle.setObjectName("Muted")
@@ -29,36 +29,36 @@ class CpuPanel(Panel):
 
         fila = QHBoxLayout()
         fila.setSpacing(14)
-        fila.addWidget(self._badge)
+        fila.addWidget(self._etiqueta_identificador)
         fila.addLayout(textos, 1)
         self.cuerpo.addLayout(fila)
 
         etiqueta = QLabel("Progreso del quantum")
         etiqueta.setObjectName("Muted")
-        self._barra = QProgressBar()
-        self._barra.setRange(0, 100)
-        self._barra.setFixedHeight(16)
+        self._barra_quantum = QProgressBar()
+        self._barra_quantum.setRange(0, 100)
+        self._barra_quantum.setFixedHeight(16)
         self.cuerpo.addWidget(etiqueta)
-        self.cuerpo.addWidget(self._barra)
-        self._total = QProgressBar()
-        self._total.setObjectName("TotalProgress")
-        self._total.setRange(0, 100)
-        self._total.setFixedHeight(16)
+        self.cuerpo.addWidget(self._barra_quantum)
+        self._barra_progreso_total = QProgressBar()
+        self._barra_progreso_total.setObjectName("TotalProgress")
+        self._barra_progreso_total.setRange(0, 100)
+        self._barra_progreso_total.setFixedHeight(16)
         self.cuerpo.addWidget(QLabel("Progreso total del proceso"))
-        self.cuerpo.addWidget(self._total)
+        self.cuerpo.addWidget(self._barra_progreso_total)
 
-    def actualizar(self, p):
-        if p is None:
-            self._badge.setText("–")
-            self._badge.setStyleSheet(f"QLabel#Badge {{ background: {colors.BORDER}; font-size: 28px; }}")
+    def actualizar(self, proceso):
+        if proceso is None:
+            self._etiqueta_identificador.setText("–")
+            self._etiqueta_identificador.setStyleSheet(f"QLabel#Badge {{ background: {colores.BORDER}; font-size: 28px; }}")
             self._nombre.setText("CPU libre")
             self._detalle.setText("Sin proceso en ejecución")
-            self._barra.setValue(0)
-            self._total.setValue(0)
+            self._barra_quantum.setValue(0)
+            self._barra_progreso_total.setValue(0)
             return
-        self._badge.setText(p.letra)
-        self._badge.setStyleSheet(f"QLabel#Badge {{ background: {colors.color_pid(p.pid)}; font-size: 28px; }}")
-        self._nombre.setText(p.nombre)
-        self._detalle.setText(f"PID {p.pid}  ·  Prioridad {p.prioridad}")
-        self._barra.setValue(p.progreso_quantum)
-        self._total.setValue(p.progreso_total)
+        self._etiqueta_identificador.setText(proceso.letra)
+        self._etiqueta_identificador.setStyleSheet(f"QLabel#Badge {{ background: {colores.color_pid(proceso.pid)}; font-size: 28px; }}")
+        self._nombre.setText(proceso.nombre)
+        self._detalle.setText(f"PID {proceso.pid}  ·  Prioridad {proceso.prioridad}")
+        self._barra_quantum.setValue(proceso.progreso_quantum)
+        self._barra_progreso_total.setValue(proceso.progreso_total)

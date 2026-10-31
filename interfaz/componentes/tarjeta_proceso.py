@@ -1,4 +1,4 @@
-from interfaz.estilos import colores as colors
+from interfaz.estilos import colores
 """Tarjeta de un proceso dentro de una cola."""
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
@@ -6,21 +6,21 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
 from interfaz.formato import tooltip_proceso
 
 
-class ProcessCard(QFrame):
+class TarjetaProceso(QFrame):
     seleccionado = Signal(int)
 
-    def __init__(self, p, parent=None):
+    def __init__(self, proceso, parent=None):
         super().__init__(parent)
         self.setObjectName("Card")
-        self.pid = p.pid
+        self.pid = proceso.pid
         self.setCursor(Qt.PointingHandCursor)
         # el color del proceso viene de interfaz/estilos/colores.py (PALETA_PROCESOS) a través de colors.color_pid(p.pid)
 
-        self._badge = QLabel(p.letra)
-        self._badge.setObjectName("Badge")
-        self._badge.setFixedSize(34, 34)
-        self._badge.setAlignment(Qt.AlignCenter)
-        self._badge.setStyleSheet(f"QLabel#Badge {{ background: {colors.color_pid(p.pid)}; }}")
+        self._etiqueta_identificador = QLabel(proceso.letra)
+        self._etiqueta_identificador.setObjectName("Badge")
+        self._etiqueta_identificador.setFixedSize(34, 34)
+        self._etiqueta_identificador.setAlignment(Qt.AlignCenter)
+        self._etiqueta_identificador.setStyleSheet(f"QLabel#Badge {{ background: {colores.color_pid(proceso.pid)}; }}")
 
         self._nombre = QLabel()
         self._nombre.setTextFormat(Qt.PlainText)
@@ -28,21 +28,21 @@ class ProcessCard(QFrame):
         self._nombre.setStyleSheet("font-weight: 600;")
         self._detalle = QLabel()
         self._detalle.setObjectName("Muted")
-        textos = QVBoxLayout()
-        textos.setSpacing(0)
-        textos.addWidget(self._nombre)
-        textos.addWidget(self._detalle)
+        distribucion_textos = QVBoxLayout()
+        distribucion_textos.setSpacing(0)
+        distribucion_textos.addWidget(self._nombre)
+        distribucion_textos.addWidget(self._detalle)
 
-        fila = QHBoxLayout(self)
-        fila.setContentsMargins(10, 8, 10, 8)
-        fila.addWidget(self._badge)
-        fila.addLayout(textos, 1)
-        self.actualizar(p)
+        distribucion_tarjeta = QHBoxLayout(self)
+        distribucion_tarjeta.setContentsMargins(10, 8, 10, 8)
+        distribucion_tarjeta.addWidget(self._etiqueta_identificador)
+        distribucion_tarjeta.addLayout(distribucion_textos, 1)
+        self.actualizar(proceso)
 
-    def actualizar(self, p):
-        self._nombre.setText(p.nombre)
-        self._detalle.setText(f"PID {p.pid}  ·  Prioridad {p.prioridad}  ·  {p.progreso_total}%")
-        self.setToolTip(tooltip_proceso(p))
+    def actualizar(self, proceso):
+        self._nombre.setText(proceso.nombre)
+        self._detalle.setText(f"PID {proceso.pid}  ·  Prioridad {proceso.prioridad}  ·  {proceso.progreso_total}%")
+        self.setToolTip(tooltip_proceso(proceso))
 
     def set_seleccionado(self, activo: bool):
         if self.property("sel") == activo:
@@ -51,6 +51,6 @@ class ProcessCard(QFrame):
         self.style().unpolish(self)
         self.style().polish(self)
 
-    def mousePressEvent(self, e):
+    def mousePressEvent(self, evento):
         self.seleccionado.emit(self.pid)
-        super().mousePressEvent(e)
+        super().mousePressEvent(evento)

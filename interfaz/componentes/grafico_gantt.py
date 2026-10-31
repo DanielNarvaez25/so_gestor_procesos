@@ -3,8 +3,8 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QScrollArea, QToolTip, QWidget, QHBoxLayout, QLabel, QPushButton, QCheckBox, QComboBox
 
-from interfaz.estilos import colores as colors
-from interfaz.formato import ms, tooltip_proceso
+from interfaz.estilos import colores
+from interfaz.formato import formatear_milisegundos, tooltip_proceso
 
 from .panel import Panel
 
@@ -20,7 +20,7 @@ class _Lienzo(QWidget):
         self._segmentos = []
         self._buscar = buscar          # pid -> Proceso | None
         self._filas: list[int] = []    # pids, en orden de primera aparición
-        self._hover = None
+        self._segmento_bajo_cursor = None
         self.reloj = 0
         self.escala = 0.16
         self.setMouseTracking(True)
@@ -29,12 +29,12 @@ class _Lienzo(QWidget):
     def refrescar(self, reloj: int):
         self.reloj = reloj
         self._segmentos = list(self._linea.segmentos)
-        vistos = {}
-        for s in self._segmentos:
-            vistos.setdefault(s.pid, None)
-        self._filas = list(vistos)
+        identificadores_encontrados = {}
+        for segmento in self._segmentos:
+            identificadores_encontrados.setdefault(segmento.pid, None)
+        self._filas = list(identificadores_encontrados)
         if not self._segmentos:
-            self._hover = None
+            self._segmento_bajo_cursor = None
         self.setMinimumHeight(MARGEN_SUP + max(1, len(self._filas)) * ALTO_FILA + MARGEN_INF)
         self.setMinimumWidth(int(MARGEN_IZQ + MARGEN_DER + max(1000, reloj) * self.escala))
         self.update()
@@ -43,110 +43,128 @@ class _Lienzo(QWidget):
     def _rango(self) -> tuple[int, int]:
         return 0, max(self.reloj, int((self.width() - MARGEN_IZQ) / self.escala))
 
-    def _x(self, t: float, t0: int = 0) -> float:
-        return MARGEN_IZQ + t * self.escala
+    def _posicion_horizontal(self, instante: float) -> float:
+        return MARGEN_IZQ + instante * self.escala
 
-    def _rect(self, s, t0: int) -> QRectF:
-        fila = self._filas.index(s.pid)
-        x1, x2 = self._x(s.inicio), self._x(s.fin)
-        y = MARGEN_SUP + fila * ALTO_FILA + (ALTO_FILA - ALTO_BARRA) / 2
-        return QRectF(x1, y, max(2.0, x2 - x1), ALTO_BARRA)
+    def _rectangulo_segmento(self, segmento) -> QRectF:
+        fila = self._filas.index(segmento.pid)
+        inicio_horizontal = self._posicion_horizontal(segmento.inicio)
+        fin_horizontal = self._posicion_horizontal(segmento.fin)
+        posicion_vertical = MARGEN_SUP + fila * ALTO_FILA + (ALTO_FILA - ALTO_BARRA) / 2
+        return QRectF(inicio_horizontal, posicion_vertical, max(2.0, fin_horizontal - inicio_horizontal), ALTO_BARRA)
 
-    def _segmento_en(self, pos):
-        t0, t1 = self._rango()
-        for s in reversed(self._segmentos):
-            if s.fin >= t0 and s.inicio <= t1 and self._rect(s, t0).contains(pos):
-                return s
+    def _segmento_en(self, posicion_cursor):
+        inicio_visible, fin_visible = self._rango()
+        for segmento in reversed(self._segmentos):
+            if segmento.fin < inicio_visible or segmento.inicio > fin_visible:
+                continue
+            if self._rectangulo_segmento(segmento).contains(posicion_cursor):
+                return segmento
         return None
 
     # ---------- eventos ----------
-    def mouseMoveEvent(self, e):
-        s = self._segmento_en(e.position())
-        if s is not self._hover:
-            self._hover = s
+    def mouseMoveEvent(self, evento):
+        segmento = self._segmento_en(evento.position())
+        if segmento is not self._segmento_bajo_cursor:
+            self._segmento_bajo_cursor = segmento
             self.update()
-        if s is None:
+        if segmento is None:
             QToolTip.hideText()
             return
-        p = self._buscar(s.pid)
-        if p is not None:
-            QToolTip.showText(e.globalPosition().toPoint(), tooltip_proceso(p, s), self)
+        proceso = self._buscar(segmento.pid)
+        if proceso is not None:
+            QToolTip.showText(evento.globalPosition().toPoint(), tooltip_proceso(proceso, segmento), self)
 
-    def leaveEvent(self, e):
-        self._hover = None
+    def leaveEvent(self, evento):
+        self._segmento_bajo_cursor = None
         QToolTip.hideText()
         self.update()
 
     # ---------- dibujo ----------
     def paintEvent(self, evento):
-        g = QPainter(self)
-        g.setRenderHint(QPainter.Antialiasing)
-        g.fillRect(self.rect(), QColor(colors.GANTT_BG))
-        t0 = max(0, int((evento.rect().left() - MARGEN_IZQ) / self.escala))
-        t1 = max(t0, int((evento.rect().right() - MARGEN_IZQ) / self.escala) + 1)
+        pintor = QPainter(self)
+        pintor.setRenderHint(QPainter.Antialiasing)
+        pintor.fillRect(self.rect(), QColor(colores.GANTT_BG))
+        inicio_visible = max(0, int((evento.rect().left() - MARGEN_IZQ) / self.escala))
+        fin_visible = max(inicio_visible, int((evento.rect().right() - MARGEN_IZQ) / self.escala) + 1)
         alto_zona = MARGEN_SUP + max(1, len(self._filas)) * ALTO_FILA
 
+        self._dibujar_fondo_filas(pintor)
+        self._dibujar_eje_tiempo(pintor, inicio_visible, fin_visible, alto_zona)
+        self._dibujar_identificadores(pintor)
+        if not self._segmentos:
+            pintor.drawText(self.rect(), Qt.AlignCenter, "Agrega procesos e inicia la simulación para ver su recorrido.")
+
+        self._dibujar_segmentos(pintor, inicio_visible, fin_visible)
+        self._dibujar_instante_actual(pintor, alto_zona)
+
+    def _dibujar_fondo_filas(self, pintor):
         for fila in range(len(self._filas)):
             if fila % 2 == 0:
-                g.fillRect(QRectF(0, MARGEN_SUP + fila * ALTO_FILA, self.width(), ALTO_FILA), QColor(colors.BG_PANEL))
+                pintor.fillRect(QRectF(0, MARGEN_SUP + fila * ALTO_FILA, self.width(), ALTO_FILA), QColor(colores.BG_PANEL))
 
+    def _dibujar_eje_tiempo(self, pintor, inicio_visible, fin_visible, alto_zona):
         # rejilla + eje de tiempo
-        paso = next((s for s in PASOS if s * self.escala >= 85), PASOS[-1])
-        g.setFont(self.font())
-        t = (t0 // paso) * paso
-        while t <= t1:
-            if t >= t0:
-                x = self._x(t, t0)
-                g.setPen(QPen(QColor(colors.GANTT_GRID), 1))
-                g.drawLine(int(x), MARGEN_SUP, int(x), alto_zona)
-                g.setPen(QColor(colors.TEXT_MUTED))
-                g.drawText(QRectF(x - 38, 5, 76, 20), Qt.AlignCenter, ms(t))
-            t += paso
+        # Separa las marcas al menos 85 píxeles para que los textos no se monten.
+        paso = PASOS[-1]
+        for intervalo_candidato in PASOS:
+            if intervalo_candidato * self.escala >= 85:
+                paso = intervalo_candidato
+                break
+        pintor.setFont(self.font())
+        instante = (inicio_visible // paso) * paso
+        while instante <= fin_visible:
+            if instante >= inicio_visible:
+                posicion_horizontal = self._posicion_horizontal(instante)
+                pintor.setPen(QPen(QColor(colores.GANTT_GRID), 1))
+                pintor.drawLine(int(posicion_horizontal), MARGEN_SUP, int(posicion_horizontal), alto_zona)
+                pintor.setPen(QColor(colores.TEXT_MUTED))
+                pintor.drawText(QRectF(posicion_horizontal - 38, 5, 76, 20), Qt.AlignCenter, formatear_milisegundos(instante))
+            instante += paso
 
-        # etiquetas de fila (PA, PB...)
-        g.setPen(QColor(colors.TEXT_MUTED))
-        for i, pid in enumerate(self._filas):
-            p = self._buscar(pid)
-            g.drawText(QRectF(4, MARGEN_SUP + i * ALTO_FILA, MARGEN_IZQ - 8, ALTO_FILA),
+    def _dibujar_identificadores(self, pintor):
+        # Cada fila muestra el PID de su proceso.
+        pintor.setPen(QColor(colores.TEXT_MUTED))
+        for indice_fila, pid in enumerate(self._filas):
+            pintor.drawText(QRectF(4, MARGEN_SUP + indice_fila * ALTO_FILA, MARGEN_IZQ - 8, ALTO_FILA),
                        Qt.AlignVCenter | Qt.AlignLeft, str(pid))
 
-        if not self._segmentos:
-            g.drawText(self.rect(), Qt.AlignCenter, "Agrega procesos e inicia la simulación para ver su recorrido.")
-
+    def _dibujar_segmentos(self, pintor, inicio_visible, fin_visible):
         # barras
-        for s in self._segmentos:
-            if s.fin < t0 or s.inicio > t1:
+        for segmento in self._segmentos:
+            if segmento.fin < inicio_visible or segmento.inicio > fin_visible:
                 continue
-            r = self._rect(s, t0)
-            g.setPen(Qt.NoPen)
-            g.setBrush(QColor(colors.color_pid(s.pid)))
-            g.drawRoundedRect(r, 6, 6)
-            if r.width() > 18:
-                p = self._buscar(s.pid)
-                g.setPen(QColor(colors.TEXT_ON_ACCENT))
-                g.drawText(r, Qt.AlignCenter, p.letra if p else "")
-            if s is self._hover:
-                g.setPen(QPen(QColor(colors.GANTT_HOVER), 2))
-                g.setBrush(Qt.NoBrush)
-                g.drawRoundedRect(r, 6, 6)
+            rectangulo = self._rectangulo_segmento(segmento)
+            pintor.setPen(Qt.NoPen)
+            pintor.setBrush(QColor(colores.color_pid(segmento.pid)))
+            pintor.drawRoundedRect(rectangulo, 6, 6)
+            if rectangulo.width() > 18:
+                proceso = self._buscar(segmento.pid)
+                pintor.setPen(QColor(colores.TEXT_ON_ACCENT))
+                pintor.drawText(rectangulo, Qt.AlignCenter, proceso.letra if proceso else "")
+            if segmento is self._segmento_bajo_cursor:
+                pintor.setPen(QPen(QColor(colores.GANTT_HOVER), 2))
+                pintor.setBrush(Qt.NoBrush)
+                pintor.drawRoundedRect(rectangulo, 6, 6)
 
+    def _dibujar_instante_actual(self, pintor, alto_zona):
         # línea del "ahora"
-        x = self._x(self.reloj, t0)
-        g.setPen(QPen(QColor(colors.GANTT_NOW), 1, Qt.DashLine))
-        g.drawLine(int(x), MARGEN_SUP, int(x), alto_zona)
+        posicion_horizontal = self._posicion_horizontal(self.reloj)
+        pintor.setPen(QPen(QColor(colores.GANTT_NOW), 1, Qt.DashLine))
+        pintor.drawLine(int(posicion_horizontal), MARGEN_SUP, int(posicion_horizontal), alto_zona)
 
 
-class GanttView(Panel):
+class HistorialCpu(Panel):
     def __init__(self, linea, buscar, parent=None):
         super().__init__("RECORRIDO DE CPU · HISTORIAL", parent)
         self._lienzo = _Lienzo(linea, buscar)
         self._ajustando = False
         controles = QHBoxLayout()
-        inicio = QPushButton("← Inicio")
-        inicio.setToolTip("Volver a los primeros eventos")
-        inicio.clicked.connect(self.ir_inicio)
-        actual = QPushButton("Ahora →")
-        actual.clicked.connect(self.ir_actual)
+        boton_inicio = QPushButton("← Inicio")
+        boton_inicio.setToolTip("Volver a los primeros eventos")
+        boton_inicio.clicked.connect(self.ir_inicio)
+        boton_ahora = QPushButton("Ahora →")
+        boton_ahora.clicked.connect(self.ir_actual)
         self.seguir = QCheckBox("Seguir ejecución")
         self.seguir.setChecked(True)
         self.seguir.toggled.connect(self._seguir)
@@ -155,8 +173,8 @@ class GanttView(Panel):
             self.zoom.addItem(texto, escala)
         self.zoom.setCurrentIndex(1)
         self.zoom.currentIndexChanged.connect(self._zoom)
-        controles.addWidget(inicio)
-        controles.addWidget(actual)
+        controles.addWidget(boton_inicio)
+        controles.addWidget(boton_ahora)
         controles.addStretch()
         controles.addWidget(self.seguir)
         controles.addWidget(QLabel("Zoom"))
@@ -174,8 +192,8 @@ class GanttView(Panel):
         self.cuerpo.addWidget(ayuda)
 
     def _desplazado(self, valor):
-        barra = self.scroll.horizontalScrollBar()
-        if not self._ajustando and valor < barra.maximum() - 4:
+        barra_desplazamiento = self.scroll.horizontalScrollBar()
+        if not self._ajustando and valor < barra_desplazamiento.maximum() - 4:
             self.seguir.setChecked(False)
 
     def _rango_cambiado(self, minimo, maximo):
@@ -184,8 +202,8 @@ class GanttView(Panel):
 
     def _al_final(self):
         self._ajustando = True
-        barra = self.scroll.horizontalScrollBar()
-        barra.setValue(barra.maximum())
+        barra_desplazamiento = self.scroll.horizontalScrollBar()
+        barra_desplazamiento.setValue(barra_desplazamiento.maximum())
         self._ajustando = False
 
     def _seguir(self, activo):
@@ -201,12 +219,12 @@ class GanttView(Panel):
         self._al_final()
 
     def _zoom(self):
-        barra = self.scroll.horizontalScrollBar()
-        instante = max(0, (barra.value() - MARGEN_IZQ) / self._lienzo.escala)
+        barra_desplazamiento = self.scroll.horizontalScrollBar()
+        instante = max(0, (barra_desplazamiento.value() - MARGEN_IZQ) / self._lienzo.escala)
         self._lienzo.escala = self.zoom.currentData()
         self.refrescar(self._lienzo.reloj)
         if not self.seguir.isChecked():
-            barra.setValue(int(MARGEN_IZQ + instante * self._lienzo.escala))
+            barra_desplazamiento.setValue(int(MARGEN_IZQ + instante * self._lienzo.escala))
 
     def refrescar(self, reloj: int):
         self._ajustando = True
