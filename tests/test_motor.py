@@ -57,6 +57,7 @@ class SimulationTests(unittest.TestCase):
 
     def test_new_rate_is_used_before_requeue_ordering(self):
         proceso = self.crear_proceso(100)
+        self.motor.preparar_ejecucion()
         proceso.quantum_usado = proceso.quantum - 10
         self.motor.cambiar_divisor_quantum(10)
         self.motor.paso()
@@ -64,6 +65,7 @@ class SimulationTests(unittest.TestCase):
 
     def test_io_release_does_not_add_an_extra_tick_of_wait(self):
         proceso = self.crear_proceso(100)
+        self.motor.preparar_ejecucion()
         proceso.bloqueo_en = 3
         self.motor._sortear_duracion_en_milisegundos = lambda *_: 7
         self.motor.paso()

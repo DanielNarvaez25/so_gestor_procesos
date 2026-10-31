@@ -58,8 +58,9 @@ class ControladorSimulacion(QObject):
 
     def iniciar(self):
         if self.motor.hay_trabajo:
+            self.motor.preparar_ejecucion()
             self.temporizador.start()
-        self.cambio.emit()
+        self._publicar_eventos_y_estado()
 
     def pausar(self):
         self.temporizador.stop()

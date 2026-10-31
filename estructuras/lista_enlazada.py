@@ -1,16 +1,10 @@
-"""Lista simplemente enlazada: cada nodo conoce únicamente al siguiente."""
-
-
 class Nodo:
-    """Guarda un dato y el enlace al próximo nodo."""
-
     def __init__(self, dato):
         self.dato = dato
         self.siguiente = None
 
 
 class ListaEnlazada:
-    """Conserva el orden de inserción sin guardar los datos en una lista de Python."""
 
     def __init__(self, datos = ()):
         self._primero = None
@@ -20,7 +14,7 @@ class ListaEnlazada:
             self.agregar(dato)
 
     def agregar(self, dato):
-        """Enlaza un nuevo nodo al final, sin recorrer la lista: O(1)."""
+        """Enlaza un nuevo nodo al final"""
         nuevo_nodo = Nodo(dato)
         lista_esta_vacia = self._ultimo is None
         if lista_esta_vacia:
@@ -32,7 +26,7 @@ class ListaEnlazada:
         self._cantidad += 1
 
     def eliminar(self, dato):
-        """Busca y elimina la primera coincidencia, conservando los enlaces: O(n)."""
+        """Busca y elimina la primera coincidencia."""
         nodo_anterior = None
         nodo_actual = self._primero
         while nodo_actual is not None:
@@ -42,21 +36,17 @@ class ListaEnlazada:
                 es_primer_nodo = nodo_anterior is None
                 es_ultimo_nodo = nodo_actual is self._ultimo
 
-                # 1. Saltamos el nodo eliminado al reparar el enlace de entrada.
                 if es_primer_nodo:
                     self._primero = nodo_siguiente
                 else:
                     nodo_anterior.siguiente = nodo_siguiente
 
-                # 2. Si era el último, su anterior pasa a ser el nuevo final.
                 if es_ultimo_nodo:
                     self._ultimo = nodo_anterior
 
-                # 3. Actualizamos el tamaño y terminamos la búsqueda.
                 self._cantidad -= 1
                 return
 
-            # Todavía no lo encontramos: avanzamos un nodo, conservando el anterior.
             nodo_anterior = nodo_actual
             nodo_actual = nodo_actual.siguiente
         raise ValueError("El dato no se encuentra en la lista enlazada")

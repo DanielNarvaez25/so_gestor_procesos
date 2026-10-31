@@ -14,7 +14,6 @@ class TarjetaProceso(QFrame):
         self.setObjectName("Card")
         self.pid = proceso.pid
         self.setCursor(Qt.PointingHandCursor)
-        # el color del proceso viene de interfaz/estilos/colores.py (PALETA_PROCESOS) a través de colors.color_pid(p.pid)
 
         self._etiqueta_identificador = QLabel(proceso.letra)
         self._etiqueta_identificador.setObjectName("Badge")

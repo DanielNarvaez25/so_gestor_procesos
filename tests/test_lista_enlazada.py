@@ -60,6 +60,7 @@ class ListaEnlazadaTests(unittest.TestCase):
         motor = MotorSimulacion(seed=7)
         primero = motor.agregar_proceso(tiempo_total=100, interactividad=0)
         segundo = motor.agregar_proceso(tiempo_total=100, interactividad=0)
+        motor.preparar_ejecucion()
         motor.preparados.eliminar(segundo)
         for proceso in (primero, segundo):
             motor.en_cpu = proceso

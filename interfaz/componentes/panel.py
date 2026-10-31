@@ -1,4 +1,4 @@
-"""Contenedor base con título. Todos los paneles de la interfaz heredan de aquí."""
+"""Contenedor base"""
 from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout
 
 

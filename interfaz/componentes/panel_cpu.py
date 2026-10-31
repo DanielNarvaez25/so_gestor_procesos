@@ -47,7 +47,11 @@ class PanelCpu(Panel):
         self.cuerpo.addWidget(QLabel("Progreso total del proceso"))
         self.cuerpo.addWidget(self._barra_progreso_total)
 
-    def actualizar(self, proceso):
+    def actualizar(self, proceso, vista_previa=False):
+        if vista_previa:
+            self.set_titulo("CPU / PRÓXIMO PROCESO")
+        else:
+            self.set_titulo("CPU / EJECUCIÓN ACTUAL")
         if proceso is None:
             self._etiqueta_identificador.setText("–")
             self._etiqueta_identificador.setStyleSheet(f"QLabel#Badge {{ background: {colores.BORDER}; font-size: 28px; }}")
@@ -59,6 +63,10 @@ class PanelCpu(Panel):
         self._etiqueta_identificador.setText(proceso.letra)
         self._etiqueta_identificador.setStyleSheet(f"QLabel#Badge {{ background: {colores.color_pid(proceso.pid)}; font-size: 28px; }}")
         self._nombre.setText(proceso.nombre)
-        self._detalle.setText(f"PID {proceso.pid}  ·  Prioridad {proceso.prioridad}")
-        self._barra_quantum.setValue(proceso.progreso_quantum)
+        if vista_previa:
+            self._detalle.setText(f"Próximo turno  ·  PID {proceso.pid}  ·  Prioridad {proceso.prioridad}")
+            self._barra_quantum.setValue(0)
+        else:
+            self._detalle.setText(f"PID {proceso.pid}  ·  Prioridad {proceso.prioridad}")
+            self._barra_quantum.setValue(proceso.progreso_quantum)
         self._barra_progreso_total.setValue(proceso.progreso_total)

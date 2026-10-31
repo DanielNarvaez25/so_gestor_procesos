@@ -125,8 +125,20 @@ class VentanaPrincipal(QMainWindow):
         self.terminados.actualizar(motor.terminados, seleccion)
         for indice_pestana, (titulo, procesos) in enumerate([("Listos", preparados), ("E/S", motor.suspendidos), ("Fin", motor.terminados)]):
             self.colas.setTabText(indice_pestana, f"{titulo} · {len(procesos)}")
-        self.cpu.actualizar(motor.en_cpu)
-        self.bcp_ejecucion.actualizar(motor.en_cpu)
+        # Con la CPU libre mostramos el primer preparado sin asignarle un turno.
+        proceso_mostrado = motor.en_cpu
+        vista_previa = False
+        if proceso_mostrado is None:
+            if len(preparados) > 0:
+                proceso_mostrado = preparados[0]
+                vista_previa = True
+
+        self.cpu.actualizar(proceso_mostrado, vista_previa)
+        if vista_previa:
+            self.bcp_ejecucion.set_titulo("BCP · PRÓXIMO PROCESO")
+        else:
+            self.bcp_ejecucion.set_titulo("BCP · EN CPU")
+        self.bcp_ejecucion.actualizar(proceso_mostrado)
         self.historial_cpu.refrescar(motor.reloj)
         self.resumen.actualizar(motor)
         hay_trabajo = motor.hay_trabajo

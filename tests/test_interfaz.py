@@ -5,6 +5,54 @@ from PySide6.QtWidgets import QApplication
 APLICACION = QApplication.instance() or QApplication([])
 
 class InterfaceTests(unittest.TestCase):
+    def test_vista_previa_sigue_la_preferencia_sin_asignar_ni_interrumpir_cpu(self):
+        from interfaz.ventana_principal import VentanaPrincipal
+        from simulacion.estados import Estado
+
+        ventana = VentanaPrincipal()
+        controlador = ventana.controlador
+        motor = controlador.motor
+        try:
+            self.assertEqual(ventana.cpu._nombre.toolTip(), "CPU libre")
+            baja = controlador.agregar_proceso(nombre="Baja", prioridad=1, tiempo_total=1000, interactividad=0)
+            self.assertEqual(ventana.cpu._nombre.toolTip(), baja.nombre)
+            alta = controlador.agregar_proceso(nombre="Alta", prioridad=5, tiempo_total=100, interactividad=0)
+            self.assertEqual(ventana.cpu._nombre.toolTip(), alta.nombre)
+            mayor_quantum = controlador.agregar_proceso(nombre="Mayor quantum", prioridad=5, tiempo_total=200, interactividad=0)
+            reciente = controlador.agregar_proceso(nombre="Más reciente", prioridad=5, tiempo_total=200, interactividad=0)
+            self.assertEqual(ventana.cpu._nombre.toolTip(), mayor_quantum.nombre)
+            self.assertEqual(ventana.cpu._titulo.text(), "CPU / PRÓXIMO PROCESO")
+            self.assertEqual(ventana.bcp_ejecucion._titulo.text(), "BCP · PRÓXIMO PROCESO")
+            self.assertEqual(ventana.bcp_ejecucion._valores[0].text(), str(mayor_quantum.pid))
+            self.assertIsNone(motor.en_cpu)
+            self.assertEqual(len(motor.preparados), 4)
+            for proceso in (baja, alta, mayor_quantum, reciente):
+                self.assertEqual(proceso.estado, Estado.PREPARADO)
+                self.assertEqual(proceso.tiempo_ejecutado, 0)
+            self.assertEqual(motor.reloj, 0)
+            self.assertFalse(motor.linea.segmentos)
+            self.assertEqual(ventana.cpu._barra_quantum.value(), 0)
+
+            controlador.iniciar()
+            controlador.paso()
+            controlador.pausar()
+            turno_usado = mayor_quantum.quantum_usado
+            controlador.agregar_proceso(nombre="Quantum superior", prioridad=5, tiempo_total=1000, interactividad=0)
+            self.assertIs(motor.en_cpu, mayor_quantum)
+            self.assertEqual(ventana.cpu._nombre.toolTip(), mayor_quantum.nombre)
+            self.assertEqual(ventana.cpu._titulo.text(), "CPU / EJECUCIÓN ACTUAL")
+            self.assertEqual(ventana.bcp_ejecucion._titulo.text(), "BCP · EN CPU")
+            self.assertEqual(mayor_quantum.quantum_usado, turno_usado)
+            self.assertEqual(ventana.cpu._barra_quantum.value(), mayor_quantum.progreso_quantum)
+
+            controlador.reiniciar()
+            self.assertEqual(ventana.cpu._nombre.toolTip(), "CPU libre")
+            self.assertEqual(ventana.bcp_ejecucion._valores[0].text(), "—")
+            self.assertEqual(ventana.cpu._barra_quantum.value(), 0)
+        finally:
+            controlador.pausar()
+            ventana.close()
+
     def test_gantt_can_paint_during_dispatch_and_reset(self):
         import sys
         from interfaz.ventana_principal import VentanaPrincipal
@@ -41,7 +89,9 @@ class InterfaceTests(unittest.TestCase):
             ventana.formulario._tiempo.setValue(15)
             ventana.formulario._interactividad.setValue(0)
             ventana.formulario.agregar.click()
-            self.assertEqual(ventana.controlador.motor.en_cpu.tiempo_total, 15)
+            self.assertIsNone(ventana.controlador.motor.en_cpu)
+            self.assertEqual(ventana.controlador.motor.buscar(101).tiempo_total, 15)
+            self.assertEqual(len(ventana.controlador.motor.preparados), 1)
             self.assertEqual(ventana.controlador.seleccion, 101)
             ventana.barra_controles._boton_paso.click()
             self.assertEqual(ventana.controlador.motor.reloj, 10)

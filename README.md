@@ -299,7 +299,7 @@ queda en 20 ms. El motor solo admite los divisores definidos en
 Después lee `paso()` en `simulacion/motor.py`. El motor aplica la selección y
 administra el tiempo y los cambios de estado:
 
-1. Si la CPU está libre, asigna el siguiente proceso.
+1. Llama a `preparar_ejecucion()`: si la CPU está libre, asigna el siguiente proceso.
 2. Calcula el tiempo hasta el evento más cercano, sin sobrepasar el fin del paso.
 3. Actualiza el reloj, la ejecución, la espera y los bloqueos de E/S.
 4. Devuelve a preparados los procesos cuya E/S acaba de finalizar.
@@ -312,11 +312,37 @@ nombres como `_asignar_cpu_al_siguiente_proceso()` y
 `_devolver_por_quantum_agotado()`. La llegada de un proceso más prioritario no
 interrumpe al proceso actual: la selección ocurre cuando la CPU queda libre.
 
+### Cuándo se realiza la primera selección
+
+Agregar procesos los deja en preparados, aunque la CPU esté libre. Esto permite
+cargar varios antes de comenzar y compararlos por prioridad, quantum y llegada.
+Por ejemplo, si primero agregas A con prioridad 1 y después B con prioridad 5,
+ambos quedan esperando y B obtiene el primer turno al iniciar.
+
+Mientras la CPU está libre, el panel muestra al próximo candidato y su BCP como
+**PRÓXIMO PROCESO**. La vista se actualiza con el orden de preparados al agregar
+procesos o cambiar el divisor del quantum. Es una vista previa: el proceso sigue
+en preparados, el reloj no avanza y no se abre un segmento del historial. Si ya
+hay un turno asignado, se muestra ese proceso incluso durante una pausa.
+
+- **Iniciar:** el controlador llama a `motor.preparar_ejecucion()`, activa la
+  reproducción y publica el estado elegido. La asignación no avanza el reloj;
+  el temporizador ejecutará los siguientes pasos.
+- **Paso:** el motor prepara la ejecución y avanza hasta 10 ms simulados.
+- **Pausar y reanudar:** el proceso que ya tiene la CPU conserva su turno,
+  su quantum usado y la E/S programada, aunque se agregue otro más prioritario.
+- **Agregar durante la reproducción:** el nuevo proceso espera en preparados.
+  Si la CPU está libre, podrá elegirse en el siguiente paso del temporizador.
+
+Los cambios de turno durante un paso siguen ocurriendo cuando el proceso termina,
+solicita E/S o agota su quantum. Las reglas de PMA-QMG-P permanecen iguales.
+
 ### Funciones del motor que conviene reconocer
 
 | Función | Responsabilidad |
 | --- | --- |
-| `agregar_proceso()` | Valida los datos, crea el proceso y lo incorpora a preparados. Si la CPU está libre, intenta asignarlo. |
+| `agregar_proceso()` | Valida los datos, crea el proceso y lo deja en preparados. No asigna la CPU. |
+| `preparar_ejecucion()` | Al iniciar o dar un paso, selecciona un preparado si la CPU está libre. Conserva un turno ya asignado y no avanza el reloj. |
 | `paso()` | Coordina el avance del tiempo y los cambios de estado. |
 | `_tiempo_hasta_proximo_evento()` | Decide cuánto avanzar sin saltarse una finalización, un bloqueo o el fin de un quantum. |
 | `_avanzar_reloj_y_tiempos()` | Acumula espera y ejecución, reduce la espera de E/S y extiende el historial. |
