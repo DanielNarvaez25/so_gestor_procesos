@@ -17,7 +17,6 @@ class MotorSimulacion:
         self.eventos = []
         self._limpiar()
 
-    # ---------- estado ----------
     def _limpiar(self):
         self.reloj = 0
         self._siguiente_pid = configuracion.PID_INICIAL
@@ -39,14 +38,12 @@ class MotorSimulacion:
         return False
 
     def preparados_ordenados(self):
-        # Las tarjetas muestran el mismo orden de preferencia que usa la CPU.
         procesos_para_mostrar = planificador.ordenar_preparados(self.preparados)
         return procesos_para_mostrar
 
     def buscar(self, pid):
         return self.procesos.get(pid)
 
-    # ---------- controles ----------
     def reiniciar(self):
         self._limpiar()
         self.linea.limpiar()
@@ -68,9 +65,7 @@ class MotorSimulacion:
         if divisor_quantum not in configuracion.DIVISORES_QUANTUM:
             raise ValueError("Rata de quantum no admitida")
         self.divisor_quantum = divisor_quantum
-        # El turno en curso conserva su quantum y su E/S programada.
         for proceso in self.procesos.values():
-            # El proceso en CPU conserva el turno actual; los finalizados no cambian.
             if proceso.estado == Estado.TERMINADO:
                 continue
             if proceso.estado == Estado.EJECUCION:
@@ -79,7 +74,7 @@ class MotorSimulacion:
             proceso.quantum = nuevo_quantum
         self._registrar_evento(f"Rata de quantum = {divisor_quantum}. Se aplicará desde el próximo turno de CPU.")
 
-    # ---------- procesos ----------
+
     def agregar_proceso(self, nombre="", prioridad=3, tiempo_total=None, interactividad=None):
         if tiempo_total is not None:
             if not isinstance(tiempo_total, int):
@@ -148,7 +143,6 @@ class MotorSimulacion:
         fin_del_paso = self.reloj + configuracion.TICK_MS
 
         while self.reloj < fin_del_paso:
-            # Sin trabajo pendiente, no hay más eventos que simular en este paso.
             if not self.hay_trabajo:
                 break
             tiempo_a_avanzar = self._tiempo_hasta_proximo_evento(fin_del_paso)
@@ -245,7 +239,6 @@ class MotorSimulacion:
         self._registrar_evento(f"{proceso.nombre} entra a CPU.")
 
     def _programar_solicitud_entrada_salida(self, proceso):
-        # Un turno de un solo paso no permite solicitar E/S antes de agotarse.
         if proceso.quantum <= configuracion.TICK_MS:
             return None
 

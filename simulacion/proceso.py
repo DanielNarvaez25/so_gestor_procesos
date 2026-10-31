@@ -1,6 +1,4 @@
-"""Proceso = BCP (bloque de control de proceso). Sin dependencias de Qt."""
 from dataclasses import dataclass
-
 from .estados import Estado
 
 
@@ -9,25 +7,25 @@ class Proceso:
     pid: int
     nombre: str
     prioridad: int
-    tiempo_total: int            # ms de CPU que necesita en total
-    quantum: int                 # ms por turno
-    interactividad: int = 0      # % de probabilidad de pedir E/S en cada turno
+    tiempo_total: int            
+    quantum: int                 
+    interactividad: int = 0      
     estado: Estado = Estado.PREPARADO
 
-    orden_cola: int = 0          # turno de entrada a Preparados (desempate "primero")
+    orden_cola: int = 0          
     tiempo_ejecutado: int = 0
     quantum_usado: int = 0
-    tiempo_espera: int = 0       # acumulado en Preparados
+    tiempo_espera: int = 0       
 
     causa_bloqueo: str = ""
     bloqueo_total: int = 0
     bloqueo_restante: int = 0
-    bloqueo_en: int | None = None   # ms de quantum tras los que pedirá E/S (este turno)
+    bloqueo_en: int | None = None   
 
     @property
     def letra(self) -> str:
         partes = self.nombre.strip().split()
-        return (partes[-1][0] if partes else "?").upper()
+        return (partes[0][0] if partes else "?").upper()
 
     @property
     def tiempo_restante(self) -> int:

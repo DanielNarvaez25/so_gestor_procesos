@@ -17,20 +17,20 @@ def calcular_quantum(tiempo_total, divisor_quantum):
 
 def tiene_preferencia(proceso_candidato, proceso_actual):
     """Compara dos procesos aplicando PMA, después QMG y finalmente llegada."""
-    # 1. Prioridad más alta. Solo revisamos el quantum si hay empate.
+    # 1. Prioridad más alta. 
     if proceso_candidato.prioridad > proceso_actual.prioridad:
         return True
     elif proceso_candidato.prioridad < proceso_actual.prioridad:
         return False
     else:
-        # 2. Quantum más grande. Solo revisamos la llegada si también empatan.
+        # 2. Quantum más grande.
         if proceso_candidato.quantum > proceso_actual.quantum:
             return True
         elif proceso_candidato.quantum < proceso_actual.quantum:
             return False
         else:
-            # 3. Primero en llegar a preparados.
-            if proceso_candidato.orden_cola < proceso_actual.orden_cola:
+            # 3.(PID desempata).
+            if proceso_candidato.pid < proceso_actual.pid:
                 return True
             else:
                 # En un empate completo conservamos el proceso actual.
@@ -38,10 +38,7 @@ def tiene_preferencia(proceso_candidato, proceso_actual):
 
 
 def seleccionar_siguiente_proceso(preparados):
-    """Recorre la lista enlazada y conserva el proceso con mejor preferencia.
-
-    No elimina nodos ni cambia estados: el motor se encarga de esas acciones.
-    Si la colección está vacía, devuelve None. El recorrido cuesta O(n).
+    """Recorre la lista y conserva el proceso con mejor preferencia.
     """
     proceso_elegido = None
     for proceso_candidato in preparados:
@@ -58,8 +55,7 @@ def seleccionar_siguiente_proceso(preparados):
 
 def ordenar_preparados(preparados):
     """Crea la lista de tarjetas con las mismas reglas que la selección de CPU.
-
-    Inserta cada proceso en su posición, sin modificar la lista enlazada original.
+    Inserta cada proceso en su posición, sin modificar la lista original.
     """
     procesos_ordenados = []
     for proceso_candidato in preparados:

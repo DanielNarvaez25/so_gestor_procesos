@@ -1,4 +1,4 @@
-"""Parámetros de la simulación. Cambia los valores aquí, no en la lógica."""
+"""Parámetros de la simulación."""
 
 TICK_MS = 10                 # ms simulados que avanza cada tick
 
