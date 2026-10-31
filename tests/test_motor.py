@@ -38,7 +38,7 @@ class SimulationTests(unittest.TestCase):
         for _ in range(2):
             self.motor.paso()
         self.assertIs(self.motor.en_cpu, segundo_proceso)
-        self.assertEqual(sorted([primer_proceso, segundo_proceso, tercer_proceso, proceso_inicial], key=planificador.clave_orden), [segundo_proceso, tercer_proceso, primer_proceso, proceso_inicial])
+        self.assertEqual(planificador.ordenar_preparados([primer_proceso, segundo_proceso, tercer_proceso, proceso_inicial]), [segundo_proceso, tercer_proceso, primer_proceso, proceso_inicial])
 
     def test_rate_change_preserves_current_turn_and_io(self):
         proceso = self.crear_proceso(1000, interactividad=100)
